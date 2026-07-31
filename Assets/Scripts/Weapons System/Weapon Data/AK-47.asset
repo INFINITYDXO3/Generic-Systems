@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e6c21ed6a41d54dabee21f85075cea, type: 3}
+  m_Name: AK-47
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  WeaponType: 1
+  Damage: 5
+  RecoilData:
+    RecoilX: 5
+    RecoilY: 30
+    RecoilZ: 5
+    KickbackZ: 0.5
+  SpreadAngle: 5
+  Range: 100
+  FireRate: 10
+  ReloadTime: 4
+  BulletType: 0
+  MagSize: 30
