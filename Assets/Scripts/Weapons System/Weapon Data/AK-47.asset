@@ -15,11 +15,11 @@ MonoBehaviour:
   WeaponType: 1
   Damage: 5
   RecoilData:
-    RecoilX: 5
+    RecoilX: 20
     RecoilY: 30
-    RecoilZ: 5
+    RecoilZ: 10
     KickbackZ: 0.5
-  SpreadAngle: 5
+  SpreadAngle: 0
   Range: 100
   FireRate: 10
   ReloadTime: 4

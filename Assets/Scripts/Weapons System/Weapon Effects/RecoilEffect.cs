@@ -32,7 +32,7 @@ public class RecoilEffect : MonoBehaviour
     public void ApplyRecoil(RecoilData recoilData)
     {
         targetRotation += new Vector3(Random.Range(-recoilData.RecoilX, recoilData.RecoilX), recoilData.RecoilY, Random.Range(-recoilData.RecoilZ, recoilData.RecoilZ));
-        targetPosition -= new Vector3(0, 0, recoilData.KickbackZ);                
+        targetPosition -= new Vector3(0, initialPosition.y, recoilData.KickbackZ);                
     }
 
     private void UpdateRecoilEffect()
@@ -44,6 +44,7 @@ public class RecoilEffect : MonoBehaviour
         currentPosition = Vector3.Lerp(currentPosition, targetPosition, Time.deltaTime * snappiness);
 
         cameraSystem.AdditionalRotation(currentRotation.x, currentRotation.y, currentRotation.z);
+        currentPosition.y = spineTransform.localPosition.y;
         spineTransform.localPosition = currentPosition;
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CameraEffects : MonoBehaviour
 {
-    [SerializeField] private CinemachineCamera virtualCamera;
+    [SerializeField] private CameraSystem cameraSystem;
 
     [Header("Shake Effect Values")]
     [SerializeField] private float amplitude = 0.4f;
@@ -13,11 +13,6 @@ public class CameraEffects : MonoBehaviour
     [Header("Sprint Effect Values")]
     [SerializeField] private float normalFOV = 60f;
     [SerializeField] private float sprintFOV = 80f;
-
-    
-    
-
-
     
 
     private CinemachineBasicMultiChannelPerlin perlin;
@@ -27,8 +22,7 @@ public class CameraEffects : MonoBehaviour
 
     private void Start()
     {
-        virtualCamera.TryGetComponent(out perlin);
-        perlin = virtualCamera.GetComponent<CinemachineBasicMultiChannelPerlin>();
+        cameraSystem.CinemachineCamera.TryGetComponent(out perlin);
     }
 
     
@@ -59,7 +53,7 @@ public class CameraEffects : MonoBehaviour
     public void SprintEffect(bool isSprinting)
     {
         float targetValue = (isSprinting)? sprintFOV : normalFOV;
-        virtualCamera.Lens.FieldOfView = Mathf.Lerp(virtualCamera.Lens.FieldOfView, targetValue, Time.deltaTime * 2);
+        cameraSystem.CinemachineCamera.Lens.FieldOfView = Mathf.Lerp(cameraSystem.CinemachineCamera.Lens.FieldOfView, targetValue, Time.deltaTime * 2);
     }
 
     

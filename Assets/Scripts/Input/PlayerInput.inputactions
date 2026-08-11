@@ -43,6 +43,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Crouch",
+                    "type": "PassThrough",
+                    "id": "ce47ce63-046d-4154-a663-fd5b7e747ed7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "MousePress_Left",
                     "type": "PassThrough",
                     "id": "022ef24d-b339-4342-ba0d-bc107f679dd1",
@@ -73,6 +82,15 @@
                     "name": "NextWeapon",
                     "type": "Button",
                     "id": "198a3be5-4881-4d84-b5be-6fd971d2e6b8",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Test",
+                    "type": "PassThrough",
+                    "id": "a476a4eb-4f60-4057-a39b-ac04cf92bbf5",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -209,6 +227,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "NextWeapon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0e2ea1d8-08f9-441f-9748-7838ee15d8db",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5ed967b9-ea95-4e80-8dde-4797904eb14a",
+                    "path": "<Keyboard>/numpad0",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Test",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

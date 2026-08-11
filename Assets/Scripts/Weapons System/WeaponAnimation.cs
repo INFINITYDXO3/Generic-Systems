@@ -1,3 +1,5 @@
+using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Weapon))]
@@ -7,10 +9,12 @@ public class WeaponAnimation : MonoBehaviour
     [SerializeField] private AudioClip magOut, magIn;
 
 
+    public bool BoltRackForward {get => _boltRackForward;}
+    private bool _boltRackForward = true;
 
-    public const string IDLE = "Weapon_Idle";
-    public const string ATTACK = "Weapon_Attack";
-    public const string Reload = "Weapon_Reload";
+    public readonly int IDLE = Animator.StringToHash("Weapon_Idle");
+    public readonly int ATTACK = Animator.StringToHash("Weapon_Attack");
+    public readonly int RELOAD = Animator.StringToHash("Weapon_Reload");
     
     private Weapon weapon;
     private Animator animator;
@@ -26,16 +30,30 @@ public class WeaponAnimation : MonoBehaviour
         hasAnimator = TryGetComponent(out animator);
     }
 
-    public void PlayAnimation(string animationName)
+    public void PlayAttack()
     {
-        if(!hasAnimator) return;
-        
-        animator.Play(animationName);
+        if (!hasAnimator) return;
+        animator.Play(ATTACK);
+    }
+
+    public void PlayReload()
+    {
+        if (!hasAnimator) return;
+        animator.Play(RELOAD);
+    }
+
+    public void PlayIdle()
+    {
+        if (!hasAnimator) return;
+        animator.Play(IDLE);
     }
 
     public void AnimatorReset()
     {
-        animator.StopPlayback();
+        if(!hasAnimator) return;
+        
+        animator.Rebind();
+        animator.Update(0f);
     }
 
     public void OnRackBack()
@@ -43,6 +61,8 @@ public class WeaponAnimation : MonoBehaviour
         if(!hasAudioSource)  return;
 
         source.PlayOneShot(rackBack);
+
+        _boltRackForward = false;
     }
 
     public void OnRackForward()
@@ -50,6 +70,8 @@ public class WeaponAnimation : MonoBehaviour
         if(!hasAudioSource)  return;
 
         source.PlayOneShot(rackForward);
+
+        _boltRackForward = true;
     }
 
     public void OnMagOut()

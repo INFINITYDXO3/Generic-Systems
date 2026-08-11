@@ -4940,7 +4940,7 @@ MonoBehaviour:
     m_Bits: 0
   m_ScaleMode: 1
   m_Offset: {x: 0, y: 0, z: 0}
-  m_Size: {x: 0.1, y: 0.1, z: 0.1}
+  m_Size: {x: 0.1, y: 0.1, z: 0.2}
   m_FadeFactor: 1
   m_VisibleInScene: 1
   version: 1

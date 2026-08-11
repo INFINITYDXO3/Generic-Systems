@@ -8,6 +8,7 @@ public class InputManager : MonoBehaviour
 	private Vector2 look;
 	private bool jump;
 	private bool sprint;
+	private bool crouch;
 	private bool attacking;
 
 
@@ -15,6 +16,7 @@ public class InputManager : MonoBehaviour
 	public Vector2 Look {get => look;}
 	public bool Jump {get => jump;}
 	public bool Sprint {get => sprint;}
+	public bool Crouch {get => crouch;}
 	public bool Attacking {get => attacking;}
 
 	public event Action OnReloadStarted;
@@ -41,7 +43,12 @@ public class InputManager : MonoBehaviour
 		sprint = value.isPressed;
 	}
 
-	public void OnMousePress_Left(InputValue value)
+    public void OnCrouch(InputValue value)
+    {
+        crouch = value.isPressed;
+    }
+
+    public void OnMousePress_Left(InputValue value)
 	{
 		attacking = value.isPressed;
 	}
@@ -61,6 +68,7 @@ public class InputManager : MonoBehaviour
 	{
 		OnNextWeaponSwitched?.Invoke();
 	}
+
 
 }
 	

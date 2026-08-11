@@ -47,7 +47,7 @@ public class Weapon : Item
     protected virtual void OnEnable()
     {
         if(attackCoroutine != null) attackCoroutine =  StartCoroutine(AttackC());
-        if(weaponAnimation != null) weaponAnimation.PlayAnimation(WeaponAnimation.IDLE);
+        if(weaponAnimation != null) weaponAnimation.PlayIdle();
         
         if (isReloading)
         {
@@ -62,7 +62,12 @@ public class Weapon : Item
             StopCoroutine(AttackC());
             attackCoroutine = null;
         }
+
+        weaponAnimation.AnimatorReset();
+
     }
+
+
 
     public void ToggleAttackStatus(bool isAttacking)
     {
@@ -78,7 +83,7 @@ public class Weapon : Item
         if(!CanReload()) return;
         
         isReloading = true;
-        if(weaponAnimation != null) weaponAnimation.PlayAnimation(WeaponAnimation.Reload);
+        if(weaponAnimation != null) weaponAnimation.PlayReload();
         else OnReloadFinished();
         
     }
@@ -106,11 +111,15 @@ public class Weapon : Item
             Shoot();
         }else OnWeaponEmpty();
 
-        while(time > 0)
-        {
-            time -= Time.deltaTime;
-            yield return null;
-        }
+        // if(weaponData.WeaponType == WeaponsTypes.Manual_Action) yield return new WaitUntil(() => weaponAnimation.BoltRackForward);
+        // else
+        // {
+            while(time > 0)
+            {
+                time -= Time.deltaTime;
+                yield return null;
+            }
+        // }
 
         if(weaponData.WeaponType != WeaponsTypes.Full_Auto) yield return new WaitUntil(() => !isFiring);
         attackCoroutine = null;
@@ -158,7 +167,7 @@ public class Weapon : Item
     {
         onWeaponAttack?.Invoke();
         PlayRandomAudio(attackSounds);
-        if(weaponAnimation != null) weaponAnimation.PlayAnimation(WeaponAnimation.ATTACK);
+        if(weaponAnimation != null) weaponAnimation.PlayAttack();
 
         if (attackParticles)
         {
@@ -189,6 +198,9 @@ public class Weapon : Item
         { 
             BulletHolesPoolingManger.Instance.SetBulletHole(hitResult.hitPoint, hitResult.hitNormal);
         }
+
+        CharactersHandler characterHandler = hitResult.hitCollider.GetComponent<CharactersHandler>();
+        if(characterHandler != null) characterHandler.TakeKnockback(-hitResult.hitNormal * 10);
     }
 
     private Vector3 GetSpreadDirection(Vector3 direction)

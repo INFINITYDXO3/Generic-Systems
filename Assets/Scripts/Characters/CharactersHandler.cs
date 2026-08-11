@@ -57,7 +57,19 @@ public abstract class CharactersHandler : MonoBehaviour
     {
         if(movementSystem == null) return;
         
-        movementSystem.Sprint(value);
+        movementSystem.ToggleSprint(value);
+    }
+
+    public virtual void ToggleCrouch(bool value)
+    {
+        if(movementSystem == null) return;
+        
+        movementSystem.ToggleCrouch(value);
+    }
+
+    public void TakeKnockback(Vector3 knockback)
+    {
+        movementSystem.SetKnockback(knockback);
     }
 
     public virtual void ProcessLook(Vector2 lookInput)

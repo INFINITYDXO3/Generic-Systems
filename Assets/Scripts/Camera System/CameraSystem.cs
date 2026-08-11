@@ -25,6 +25,7 @@ public class CameraSystem : MonoBehaviour
     
     public CameraEffects CameraEffects {get => cameraEffects;}
     public Camera Cam {get => cinemachineBrain.OutputCamera;}
+    public CinemachineCamera CinemachineCamera {get => cinemachineCam;}
 
     public void RotateCamera(Vector2 lookVector)
     {
@@ -34,8 +35,8 @@ public class CameraSystem : MonoBehaviour
         xRotation -= (mouseY * Time.deltaTime) * ySensitivity;
         xRotation = Mathf.Clamp(xRotation, BottomClamp, TopClamp);
         
-        cinemachineCam.Follow.localRotation = Quaternion.Euler(xRotation + additionalXRotation, 0f, additionalZRotation);
-        transform.Rotate(Vector3.up * ((mouseX + additionalYRotation) * Time.deltaTime) * xSensitivity);
+        cinemachineCam.Follow.localRotation = Quaternion.Euler(xRotation + additionalXRotation, additionalYRotation, additionalZRotation);
+        transform.Rotate(Vector3.up * ((mouseX) * Time.deltaTime) * xSensitivity);
     }
 
     public void AdditionalRotation(float x, float y, float z)
