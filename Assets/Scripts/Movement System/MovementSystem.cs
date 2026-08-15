@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class MovementSystem : MonoBehaviour
@@ -11,6 +12,9 @@ public class MovementSystem : MonoBehaviour
     [SerializeField]
     private float mass = 60;
 
+    [SerializeField]
+    private float terminalVelocity = 35;
+
     [SerializeField, Tooltip("Move speed of the character")]
     private float walkSpeed = 2;
 
@@ -20,6 +24,12 @@ public class MovementSystem : MonoBehaviour
     [Tooltip("Sprint speed of the character")]
     [SerializeField]
     private float sprintSpeed = 8;
+
+    [SerializeField]
+    private float slideSpeed = 20;
+
+    [SerializeField]
+    private float slideTime = 3;
 
     [SerializeField]
     private float speedChangeRate = 10;
@@ -82,16 +92,20 @@ public class MovementSystem : MonoBehaviour
     private Vector3 knockbackVector;
     private Vector3 verticalVelocity;
     private Vector3 lastDirection;
+    private Vector3 additionalMovementVector;
 
     private Vector3 groundedSpherePosition;
     private Vector3 wallSpherePosition;
     private Vector3 wallNormal;
+
+    private FrictionSurface currentFrictionSurface;
 
     public float Speed {get; private set;}
 
     private bool isGrounded;
     private bool isNextToWall;
     private bool isSprinting;
+    private bool isSliding;
     private bool isCrouching;
     private bool isJumping;
     private bool jumpSafeControl;
@@ -102,6 +116,8 @@ public class MovementSystem : MonoBehaviour
 
 
     private int wallJumps;
+
+    private Coroutine slidingCoroutine;
 
     private void Start()
     {
@@ -118,6 +134,93 @@ public class MovementSystem : MonoBehaviour
 
     }
 
+    public void Move(Vector2 moveVector)
+    {
+        Vector3 inputDirection = new Vector3(moveVector.x, 0.0f, moveVector.y).normalized;
+
+        Vector3 targetDirection = CalculateDirection(inputDirection);
+        
+        CalculateSpeed(inputDirection, targetDirection);
+
+        Vector3 speedVector = (moveVector == Vector2.zero)? GetCurrentHorizontalSpeed() * lastDirection : inputVector;
+
+        velocity = speedVector + verticalVelocity + additionalMovementVector;
+        velocity = ApplyFriction(velocity);
+        velocity = ApplyVector(ref knockbackVector, velocity);
+        velocity = ApplyVector(ref additionalMovementVector, velocity);
+
+        if(velocity.magnitude > terminalVelocity)
+        {
+            velocity *= terminalVelocity/velocity.magnitude;
+        }
+
+        characterController.Move(Time.deltaTime * velocity);
+
+
+        lastDirection = targetDirection;
+    }
+
+    public void Jump(bool value)
+    {
+        if(!value) jumpSafeControl = false;
+
+        if(value == isJumping || jumpSafeControl) return;
+
+        if (value)
+        {
+            if (isGrounded )
+            {
+                verticalVelocity.y = JumpForce;
+
+            } else if (isNextToWall && wallJumps < maxWallJumps)
+            {
+                verticalVelocity.y = JumpForce;
+                
+                additionalMovementVector = wallNormal * JumpForce;
+
+
+                wallJumps++;
+            }
+
+            deltaGroundFrictionTimeout = groundFrictionTimeout;
+        }
+        
+
+        isJumping = value;
+        jumpSafeControl = true;
+
+    }
+
+    public void ToggleCrouch(bool value)
+    {
+        if(isCrouching == value || isSliding) return;
+        float height = characterController.height;
+        Vector3 center = characterController.center;
+
+        if (value)
+        {
+            height = crouchHeight;
+            center = new Vector3(0, playerCenter.y + crouchHeight , 0);
+            if(isSprinting) ToggleSlide();
+        }
+        else if(TryStandUp())
+        {
+            height = playerHeight;
+            center = playerCenter;
+        }else value = true;
+
+        characterController.center = center;
+        characterController.height = height;
+
+        isCrouching = value;
+    }
+
+    private void ToggleSlide()
+    {
+        isSliding = true;
+        slidingCoroutine ??= StartCoroutine(SlidingReturnC());
+    }
+
     private void GroundedCheck()
     {
         groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
@@ -132,12 +235,32 @@ public class MovementSystem : MonoBehaviour
         if (isNextToWall)
         {
             RaycastHit hitInfo;
-            if(!Physics.SphereCast(wallSpherePosition, wallCheckRadius, Vector3.forward, out hitInfo, wallLayers)) {}
-            else if(!Physics.SphereCast(wallSpherePosition, wallCheckRadius, Vector3.back, out hitInfo, wallLayers)) {}
-            else if(!Physics.SphereCast(wallSpherePosition, wallCheckRadius, Vector3.left, out hitInfo, wallLayers)) {}
-            else if(Physics.SphereCast(wallSpherePosition, wallCheckRadius, Vector3.right, out hitInfo, wallLayers)) {}
-            wallNormal = hitInfo.normal;
+            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
+            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, -transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
+            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, -transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
+            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
+            
+            
+
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
+        wallSpherePosition = new Vector3(transform.position.x , transform.position.y - wallCheckOffset + characterController.center.y, transform.position.z);
+
+        Gizmos.color = Color.aliceBlue;
+
+
+        Gizmos.DrawCube(groundedSpherePosition, new Vector3(1, 0.1f, 1) * groundedBoxSize);
+        Gizmos.DrawLine(groundedSpherePosition + (new Vector3(0, 0.1f, 0) * groundedBoxSize)/2, groundedSpherePosition + (new Vector3(0, 0.1f, 0)* groundedBoxSize)/2 - new Vector3(0, groundedRayMaxDistance, 0));
+
+        Gizmos.DrawCube(wallSpherePosition, Vector3.one * wallCheckRadius);
+        Gizmos.DrawRay(wallSpherePosition , transform.forward * wallCheckRadius);
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(wallSpherePosition, wallCheckRadius);
+
     }
 
     private Vector3 ApplyFriction(Vector3 velocity)
@@ -162,45 +285,11 @@ public class MovementSystem : MonoBehaviour
         return velocity - frictionVector;
     }
 
-    void OnDrawGizmos()
+    private Vector3 ApplyVector(ref Vector3 appliedVector, Vector3 velocity)
     {
-        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
-        wallSpherePosition = new Vector3(transform.position.x , transform.position.y - wallCheckOffset + characterController.center.y, transform.position.z);
-
-        Gizmos.color = Color.aliceBlue;
-
-
-        Gizmos.DrawCube(groundedSpherePosition, new Vector3(1, 0.1f, 1) * groundedBoxSize);
-        Gizmos.DrawLine(groundedSpherePosition + (new Vector3(0, 0.1f, 0) * groundedBoxSize)/2, groundedSpherePosition + (new Vector3(0, 0.1f, 0)* groundedBoxSize)/2 - new Vector3(0, groundedRayMaxDistance, 0));
-
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(wallSpherePosition, wallCheckRadius);
-
-    }
-
-    
-
-    public void Move(Vector2 moveVector)
-    {
-        Vector3 inputDirection = new Vector3(moveVector.x, 0.0f, moveVector.y).normalized;
-
-        Vector3 targetDirection = CalculateDirection(inputDirection);
-        
-        CalculateSpeed(inputDirection, targetDirection);
-
-        Vector3 speedVector = (moveVector == Vector2.zero)? GetCurrentHorizontalSpeed() * lastDirection : inputVector;
-
-        velocity = speedVector + verticalVelocity;
-        velocity = ApplyFriction(velocity);
-        velocity = ApplyKnockback(velocity);
-
-        characterController.Move(Time.deltaTime * velocity);
-
-
-        lastDirection = targetDirection;
-
-        Debug.Log(speedVector.magnitude);
+        velocity += appliedVector;
+        appliedVector = Vector3.Lerp(knockbackVector, Vector3.zero, Time.deltaTime * speedChangeRate);
+        return velocity;
     }
 
     private Vector3 CalculateDirection(Vector3 inputDirection)
@@ -227,70 +316,36 @@ public class MovementSystem : MonoBehaviour
     {
         float currentHorizontalSpeed = GetCurrentHorizontalSpeed();
         
-        if(inputVector.magnitude < currentHorizontalSpeed || (!isGrounded && !isNextToWall))
+        if(inputDirection == Vector3.zero || (!isGrounded && !isNextToWall))
         {
             inputVector = currentHorizontalSpeed * lastDirection;
+            
             return;
         }
 
         float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
-        if (inputDirection == Vector3.zero && isGrounded) targetSpeed = 0;
 
         if(!characterController.isGrounded) inputDirection *= airSpeed;
 
         inputVector = Vector3.Lerp(inputVector, targetSpeed * inputDirection.magnitude * targetDirection, speedChangeRate * Time.deltaTime);
-        
     }
 
-    public void Jump(bool value)
+
+    private IEnumerator SlidingReturnC()
     {
-        if(!value) jumpSafeControl = false;
-
-        if(value == isJumping || jumpSafeControl) return;
-
-        if (value)
+        float deltaSlideTime = slideTime;
+        while (deltaSlideTime > 0)
         {
-            if (isGrounded )
-            {
-                verticalVelocity.y = JumpForce;
+            additionalMovementVector = transform.forward.normalized * slideSpeed;
 
-            } else if (isNextToWall && wallJumps < maxWallJumps)
-            {
-                verticalVelocity.y = JumpForce;
-                
-                wallJumps++;
-            }
+            deltaSlideTime -= Time.deltaTime;
 
-            deltaGroundFrictionTimeout = groundFrictionTimeout;
+            yield return null;
         }
-        
 
-        isJumping = value;
-        jumpSafeControl = true;
+        isSliding = false;
 
-    }
-
-    public void ToggleCrouch(bool value)
-    {
-        if(isCrouching == value) return;
-        float height = characterController.height;
-        Vector3 center = characterController.center;
-
-        if (value)
-        {
-            height = crouchHeight;
-            center = new Vector3(0, playerCenter.y + crouchHeight , 0);
-        }
-        else if(TryStandUp())
-        {
-            height = playerHeight;
-            center = playerCenter;
-        }else value = true;
-
-        characterController.center = center;
-        characterController.height = height;
-
-        isCrouching = value;
+        slidingCoroutine = null;
     }
 
     private bool TryStandUp()
@@ -329,13 +384,6 @@ public class MovementSystem : MonoBehaviour
         else if (isNextToWall) verticalVelocity.y = Mathf.Clamp(verticalVelocity.y, -5, 100);
     }
 
-    
-    private Vector3 ApplyKnockback(Vector3 velocity)
-    {
-        velocity += knockbackVector;
-        knockbackVector = Vector3.Lerp(knockbackVector, Vector3.zero, Time.deltaTime * speedChangeRate);
-        return velocity;
-    }
 
     public void SetKnockback(Vector3 knockback)
     {
