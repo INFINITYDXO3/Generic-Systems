@@ -111,6 +111,7 @@ public class MovementSystem : MonoBehaviour
     private bool jumpSafeControl;
 
     private float currentGravity;
+    float currentHorizontalSpeed;
     private float deltaGroundFrictionTimeout;
     private float crouchHeight {get => playerHeight * crouchPercentage;}
 
@@ -140,14 +141,16 @@ public class MovementSystem : MonoBehaviour
 
         Vector3 targetDirection = CalculateDirection(inputDirection);
         
+        currentHorizontalSpeed = (currentHorizontalSpeed - GetCurrentHorizontalSpeed() == currentHorizontalSpeed)? currentHorizontalSpeed : GetCurrentHorizontalSpeed();
         CalculateSpeed(inputDirection, targetDirection);
 
-        Vector3 speedVector = (moveVector == Vector2.zero)? GetCurrentHorizontalSpeed() * lastDirection : inputVector;
+        Vector3 speedVector = (moveVector == Vector2.zero)? currentHorizontalSpeed * lastDirection : inputVector;
 
         velocity = speedVector + verticalVelocity;
-        velocity = ApplyFriction(velocity);
+
         velocity = ApplyVector(ref knockbackVector, velocity);
         velocity = ApplyVector(ref additionalMovementVector, velocity);
+        velocity = ApplyFriction(velocity);
 
         if(velocity.magnitude > terminalVelocity)
         {
@@ -195,21 +198,17 @@ public class MovementSystem : MonoBehaviour
     {
         if(isCrouching == value || isSliding) return;
         float height = characterController.height;
-        Vector3 center = characterController.center;
 
         if (value)
         {
             height = crouchHeight;
-            center = new Vector3(0, playerCenter.y + crouchHeight , 0);
             if(isSprinting) ToggleSlide();
         }
         else if(TryStandUp())
         {
             height = playerHeight;
-            center = playerCenter;
         }else value = true;
 
-        characterController.center = center;
         characterController.height = height;
 
         isCrouching = value;
@@ -218,7 +217,7 @@ public class MovementSystem : MonoBehaviour
     private void ToggleSlide()
     {
         isSliding = true;
-        slidingCoroutine ??= StartCoroutine(SlidingReturnC());
+        slidingCoroutine ??= StartCoroutine(SlideC());
     }
 
     private void GroundedCheck()
@@ -314,8 +313,6 @@ public class MovementSystem : MonoBehaviour
 
     private void CalculateSpeed(Vector3 inputDirection, Vector3 targetDirection)
     {
-        float currentHorizontalSpeed = GetCurrentHorizontalSpeed();
-        
         if(inputDirection == Vector3.zero || (!isGrounded && !isNextToWall))
         {
             inputVector = currentHorizontalSpeed * lastDirection;
@@ -331,7 +328,7 @@ public class MovementSystem : MonoBehaviour
     }
 
 
-    private IEnumerator SlidingReturnC()
+    private IEnumerator SlideC()
     {
         float deltaSlideTime = slideTime;
         while (deltaSlideTime > 0)
