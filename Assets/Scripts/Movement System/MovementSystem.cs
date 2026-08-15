@@ -144,7 +144,7 @@ public class MovementSystem : MonoBehaviour
 
         Vector3 speedVector = (moveVector == Vector2.zero)? GetCurrentHorizontalSpeed() * lastDirection : inputVector;
 
-        velocity = speedVector + verticalVelocity + additionalMovementVector;
+        velocity = speedVector + verticalVelocity;
         velocity = ApplyFriction(velocity);
         velocity = ApplyVector(ref knockbackVector, velocity);
         velocity = ApplyVector(ref additionalMovementVector, velocity);
