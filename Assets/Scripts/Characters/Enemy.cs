@@ -10,6 +10,8 @@ public class Enemy : CharactersHandler
 
     void Update()
     {
+        Vector3 move = target.position - transform.position;
+        ProcessMove(new (move.x, move.z));
         if(target != null)
         {
             SetAim(new Aim(transform.position, target.position - transform.position));

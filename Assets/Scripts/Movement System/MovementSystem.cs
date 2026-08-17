@@ -16,20 +16,20 @@ public class MovementSystem : MonoBehaviour
     private float terminalVelocity = 35;
 
     [SerializeField, Tooltip("Move speed of the character")]
-    private float walkSpeed = 2;
+    private float walkSpeed = 5;
 
     [SerializeField, Range(0, 1)]
     private float airSpeed = 0.5f;
 
     [Tooltip("Sprint speed of the character")]
     [SerializeField]
-    private float sprintSpeed = 8;
+    private float sprintSpeed = 15;
 
     [SerializeField]
-    private float slideSpeed = 20;
+    private float slideSpeed = 15;
 
     [SerializeField]
-    private float slideTime = 3;
+    private float slideTime = 1;
 
     [SerializeField]
     private float speedChangeRate = 10;
@@ -51,39 +51,39 @@ public class MovementSystem : MonoBehaviour
     [Space(10)]
     [Header("Ground Interactions Settings")]
     [SerializeField, Range(0,1), Tooltip("the percentage of the speed damping caused by the ground on both x and z axis")]
-    private float groundFriction;
+    private float groundFriction = 0.05f;
 
     [SerializeField, Tooltip("The time the player gets when landing on the floor before friction gets applied")]
     private float groundFrictionTimeout = 0.05f;
 
     [SerializeField]
-    private float groundedOffset = 0.5f;
+    private float groundedOffset = 0.25f;
 
     [SerializeField]
-    private float groundedBoxSize = 0.1f;
+    private float groundedBoxSize = 1.3f;
 
     [SerializeField]
-    private float groundedRayMaxDistance = 0.5f;
+    private float groundedRayMaxDistance = 1.2f;
 
     [SerializeField]
-    private LayerMask groundLayers;
+    private LayerMask groundLayers = 1;
 
     [Space(10)]
     [Header("Wall Interactions Settings")]
     [SerializeField]
-    private int maxWallJumps;
+    private int maxWallJumps = 2;
     
     [SerializeField, Range(0,1), Tooltip("the percentage of the speed damping caused by the wall on the y axis")]
-    private float wallFriction;
+    private float wallFriction = 0.1f;
 
     [SerializeField]
-    private float wallCheckOffset = 0.5f;
+    private float wallCheckOffset = 0;
     
     [SerializeField]
-    private float wallCheckRadius = 0.1f;
+    private float wallCheckRadius = 0.6f;
     
     [SerializeField]
-    private LayerMask wallLayers; 
+    private LayerMask wallLayers = 1; 
 
     #endregion
 
@@ -144,7 +144,8 @@ public class MovementSystem : MonoBehaviour
         currentHorizontalSpeed = (currentHorizontalSpeed - GetCurrentHorizontalSpeed() == currentHorizontalSpeed)? currentHorizontalSpeed : GetCurrentHorizontalSpeed();
         CalculateSpeed(inputDirection, targetDirection);
 
-        Vector3 speedVector = (moveVector == Vector2.zero)? currentHorizontalSpeed * lastDirection : inputVector;
+        Vector3 speedVector = (moveVector == Vector2.zero && additionalMovementVector != Vector3.zero)? currentHorizontalSpeed * lastDirection : inputVector;
+        lastDirection = (additionalMovementVector != Vector3.zero)?  additionalMovementVector.normalized : targetDirection;
 
         velocity = speedVector + verticalVelocity;
 
@@ -157,10 +158,10 @@ public class MovementSystem : MonoBehaviour
             velocity *= terminalVelocity/velocity.magnitude;
         }
 
+
         characterController.Move(Time.deltaTime * velocity);
 
 
-        lastDirection = targetDirection;
     }
 
     public void Jump(bool value)
@@ -180,7 +181,6 @@ public class MovementSystem : MonoBehaviour
                 verticalVelocity.y = JumpForce;
                 
                 additionalMovementVector = wallNormal * JumpForce;
-
 
                 wallJumps++;
             }
@@ -202,7 +202,7 @@ public class MovementSystem : MonoBehaviour
         if (value)
         {
             height = crouchHeight;
-            if(isSprinting) ToggleSlide();
+            if(isSprinting && isGrounded) ToggleSlide();
         }
         else if(TryStandUp())
         {
@@ -234,18 +234,16 @@ public class MovementSystem : MonoBehaviour
         if (isNextToWall)
         {
             RaycastHit hitInfo;
-            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
-            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, -transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
-            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, -transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
-            else if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius, transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; Debug.Log(wallNormal);}
+            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
             
             
-
         }
     }
 
     private void OnDrawGizmos()
-    {
+    { 
+        if(characterController == null) return;
+
         groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
         wallSpherePosition = new Vector3(transform.position.x , transform.position.y - wallCheckOffset + characterController.center.y, transform.position.z);
 
@@ -254,11 +252,14 @@ public class MovementSystem : MonoBehaviour
 
         Gizmos.DrawCube(groundedSpherePosition, new Vector3(1, 0.1f, 1) * groundedBoxSize);
         Gizmos.DrawLine(groundedSpherePosition + (new Vector3(0, 0.1f, 0) * groundedBoxSize)/2, groundedSpherePosition + (new Vector3(0, 0.1f, 0)* groundedBoxSize)/2 - new Vector3(0, groundedRayMaxDistance, 0));
-
-        Gizmos.DrawCube(wallSpherePosition, Vector3.one * wallCheckRadius);
-        Gizmos.DrawRay(wallSpherePosition , transform.forward * wallCheckRadius);
+    
+        
         Gizmos.color = Color.red;
-        Gizmos.DrawSphere(wallSpherePosition, wallCheckRadius);
+        Gizmos.DrawCube(wallSpherePosition, Vector3.one * wallCheckRadius);
+        Gizmos.DrawRay(wallSpherePosition + (new Vector3(0, 0, 1f) * wallCheckRadius / 2), new Vector3(0, 0, wallCheckRadius));
+
+        
+        //Gizmos.DrawSphere(wallSpherePosition, wallCheckRadius);
 
     }
 
@@ -287,7 +288,7 @@ public class MovementSystem : MonoBehaviour
     private Vector3 ApplyVector(ref Vector3 appliedVector, Vector3 velocity)
     {
         velocity += appliedVector;
-        appliedVector = Vector3.Lerp(knockbackVector, Vector3.zero, Time.deltaTime * speedChangeRate);
+        appliedVector = Vector3.zero;
         return velocity;
     }
 
@@ -302,7 +303,7 @@ public class MovementSystem : MonoBehaviour
 
 
         Vector3 targetDirection = (inputDirection == Vector3.zero) ? lastDirection : Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
-        return targetDirection;
+        return targetDirection.normalized;
     }
 
 
@@ -331,7 +332,7 @@ public class MovementSystem : MonoBehaviour
     private IEnumerator SlideC()
     {
         float deltaSlideTime = slideTime;
-        while (deltaSlideTime > 0)
+        while (deltaSlideTime > 0 && isGrounded)
         {
             additionalMovementVector = transform.forward.normalized * slideSpeed;
 
