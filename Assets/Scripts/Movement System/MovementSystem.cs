@@ -235,6 +235,9 @@ public class MovementSystem : MonoBehaviour
         {
             RaycastHit hitInfo;
             if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
+            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, -transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
+            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
+            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, -transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
             
             
         }
