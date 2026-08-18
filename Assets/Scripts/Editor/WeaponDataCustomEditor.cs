@@ -7,6 +7,7 @@ public class WeaponDataCustomEditor : Editor
     private SerializedProperty weaponType;
     private SerializedProperty damage;
     private SerializedProperty recoilData;
+    private SerializedProperty knockback;
     private SerializedProperty spreadAngle;
     private SerializedProperty range;
     private SerializedProperty fireRate;
@@ -22,6 +23,7 @@ public class WeaponDataCustomEditor : Editor
         weaponType = serializedObject.FindProperty("WeaponType");
         damage = serializedObject.FindProperty("Damage");
         recoilData = serializedObject.FindProperty("RecoilData");       
+        knockback = serializedObject.FindProperty("Knockback");       
         spreadAngle = serializedObject.FindProperty("SpreadAngle");
         range = serializedObject.FindProperty("Range");
         fireRate = serializedObject.FindProperty("FireRate");
@@ -54,6 +56,7 @@ public class WeaponDataCustomEditor : Editor
 
         //General Fields
         CustomEditorUtilities.NumberField(damage, "Damage");
+        CustomEditorUtilities.NumberField(knockback, "Knockbak");
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("The Attack rate is the number of attacks per second");

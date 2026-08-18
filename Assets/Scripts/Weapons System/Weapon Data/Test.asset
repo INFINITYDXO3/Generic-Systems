@@ -19,6 +19,7 @@ MonoBehaviour:
     RecoilY: 0
     RecoilZ: 0
     KickbackZ: 0
+  Knockback: 10
   SpreadAngle: 0
   Range: 1000
   FireRate: 5

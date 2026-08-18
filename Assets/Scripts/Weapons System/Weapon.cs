@@ -63,7 +63,7 @@ public class Weapon : Item
             attackCoroutine = null;
         }
 
-        weaponAnimation.AnimatorReset();
+        if(weaponAnimation != null) weaponAnimation.AnimatorReset();
 
     }
 
@@ -200,7 +200,7 @@ public class Weapon : Item
         }
 
         CharactersHandler characterHandler = hitResult.hitCollider.GetComponent<CharactersHandler>();
-        if(characterHandler != null) characterHandler.TakeKnockback(-hitResult.hitNormal * 10);
+        if(characterHandler != null) characterHandler.TakeKnockback(-hitResult.hitNormal * weaponData.Knockback);
     }
 
     private Vector3 GetSpreadDirection(Vector3 direction)

@@ -35,7 +35,7 @@ public class MovementSystem : MonoBehaviour
     private float speedChangeRate = 10;
 
     [SerializeField, Tooltip("The height the player can jump")]
-    private float JumpForce = 15f;
+    private float jumpForce = 15f;
 
     [SerializeField]
     private float playerHeight = 2;
@@ -50,40 +50,27 @@ public class MovementSystem : MonoBehaviour
     //Ground Check
     [Space(10)]
     [Header("Ground Interactions Settings")]
+    [SerializeField]
+    private GroundSensor groundSensor;
+    
     [SerializeField, Range(0,1), Tooltip("the percentage of the speed damping caused by the ground on both x and z axis")]
     private float groundFriction = 0.05f;
 
     [SerializeField, Tooltip("The time the player gets when landing on the floor before friction gets applied")]
     private float groundFrictionTimeout = 0.05f;
 
-    [SerializeField]
-    private float groundedOffset = 0.25f;
-
-    [SerializeField]
-    private float groundedBoxSize = 1.3f;
-
-    [SerializeField]
-    private float groundedRayMaxDistance = 1.2f;
-
-    [SerializeField]
-    private LayerMask groundLayers = 1;
-
     [Space(10)]
     [Header("Wall Interactions Settings")]
+    [SerializeField]
+    private WallSensor wallSensor;
+    
     [SerializeField]
     private int maxWallJumps = 2;
     
     [SerializeField, Range(0,1), Tooltip("the percentage of the speed damping caused by the wall on the y axis")]
     private float wallFriction = 0.1f;
 
-    [SerializeField]
-    private float wallCheckOffset = 0;
     
-    [SerializeField]
-    private float wallCheckRadius = 0.6f;
-    
-    [SerializeField]
-    private LayerMask wallLayers = 1; 
 
     #endregion
 
@@ -94,16 +81,10 @@ public class MovementSystem : MonoBehaviour
     private Vector3 lastDirection;
     private Vector3 additionalMovementVector;
 
-    private Vector3 groundedSpherePosition;
-    private Vector3 wallSpherePosition;
-    private Vector3 wallNormal;
-
     private FrictionSurface currentFrictionSurface;
 
     public float Speed {get; private set;}
 
-    private bool isGrounded;
-    private bool isNextToWall;
     private bool isSprinting;
     private bool isSliding;
     private bool isCrouching;
@@ -127,12 +108,9 @@ public class MovementSystem : MonoBehaviour
     }
 
 
-    private void LateUpdate()
+    private void FixedUpdate()
     {
-        GroundedCheck();
-        WallCheck();
-        if(isGrounded) wallJumps = 0;
-
+        if(groundSensor.IsGrounded) wallJumps = 0;
     }
 
     public void Move(Vector2 moveVector)
@@ -142,12 +120,9 @@ public class MovementSystem : MonoBehaviour
         Vector3 targetDirection = CalculateDirection(inputDirection);
         
         currentHorizontalSpeed = (currentHorizontalSpeed - GetCurrentHorizontalSpeed() == currentHorizontalSpeed)? currentHorizontalSpeed : GetCurrentHorizontalSpeed();
-        CalculateSpeed(inputDirection, targetDirection);
+        CalculateSpeed(inputDirection, targetDirection);        
 
-        Vector3 speedVector = (moveVector == Vector2.zero && additionalMovementVector != Vector3.zero)? currentHorizontalSpeed * lastDirection : inputVector;
-        lastDirection = (additionalMovementVector != Vector3.zero)?  additionalMovementVector.normalized : targetDirection;
-
-        velocity = speedVector + verticalVelocity;
+        velocity = inputVector + verticalVelocity;
 
         velocity = ApplyVector(ref knockbackVector, velocity);
         velocity = ApplyVector(ref additionalMovementVector, velocity);
@@ -161,6 +136,7 @@ public class MovementSystem : MonoBehaviour
 
         characterController.Move(Time.deltaTime * velocity);
 
+        lastDirection = (velocity != Vector3.zero)?  velocity.normalized : targetDirection;
 
     }
 
@@ -172,15 +148,15 @@ public class MovementSystem : MonoBehaviour
 
         if (value)
         {
-            if (isGrounded )
+            if (groundSensor.IsGrounded )
             {
-                verticalVelocity.y = JumpForce;
+                verticalVelocity.y = jumpForce;
 
-            } else if (isNextToWall && wallJumps < maxWallJumps)
+            } else if (wallSensor.IsNextToWall && wallJumps < maxWallJumps)
             {
-                verticalVelocity.y = JumpForce;
+                verticalVelocity.y = jumpForce;
                 
-                additionalMovementVector = wallNormal * JumpForce;
+                if(wallSensor != null) additionalMovementVector = wallSensor.WallNormal * jumpForce;
 
                 wallJumps++;
             }
@@ -202,7 +178,7 @@ public class MovementSystem : MonoBehaviour
         if (value)
         {
             height = crouchHeight;
-            if(isSprinting && isGrounded) ToggleSlide();
+            if(isSprinting && groundSensor.IsGrounded) ToggleSlide();
         }
         else if(TryStandUp())
         {
@@ -220,55 +196,10 @@ public class MovementSystem : MonoBehaviour
         slidingCoroutine ??= StartCoroutine(SlideC());
     }
 
-    private void GroundedCheck()
-    {
-        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
-        isGrounded = Physics.BoxCast(groundedSpherePosition, (new Vector3(1, 0.1f, 1) * groundedBoxSize) / 2, Vector3.down, Quaternion.identity, groundedRayMaxDistance, groundLayers);
-    }
-
-    private void WallCheck()
-    {
-        wallSpherePosition = new Vector3(transform.position.x , transform.position.y - wallCheckOffset + characterController.center.y, transform.position.z);
-        isNextToWall = Physics.CheckSphere(wallSpherePosition, wallCheckRadius, wallLayers);
-
-        if (isNextToWall)
-        {
-            RaycastHit hitInfo;
-            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
-            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, -transform.forward, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
-            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
-            if(Physics.BoxCast(wallSpherePosition, Vector3.one * wallCheckRadius / 2, -transform.right, out hitInfo, Quaternion.identity, 1, wallLayers)) {wallNormal = hitInfo.normal; }
-            
-            
-        }
-    }
-
-    private void OnDrawGizmos()
-    { 
-        if(characterController == null) return;
-
-        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset + characterController.center.y, transform.position.z);
-        wallSpherePosition = new Vector3(transform.position.x , transform.position.y - wallCheckOffset + characterController.center.y, transform.position.z);
-
-        Gizmos.color = Color.aliceBlue;
-
-
-        Gizmos.DrawCube(groundedSpherePosition, new Vector3(1, 0.1f, 1) * groundedBoxSize);
-        Gizmos.DrawLine(groundedSpherePosition + (new Vector3(0, 0.1f, 0) * groundedBoxSize)/2, groundedSpherePosition + (new Vector3(0, 0.1f, 0)* groundedBoxSize)/2 - new Vector3(0, groundedRayMaxDistance, 0));
-    
-        
-        Gizmos.color = Color.red;
-        Gizmos.DrawCube(wallSpherePosition, Vector3.one * wallCheckRadius);
-        Gizmos.DrawRay(wallSpherePosition + (new Vector3(0, 0, 1f) * wallCheckRadius / 2), new Vector3(0, 0, wallCheckRadius));
-
-        
-        //Gizmos.DrawSphere(wallSpherePosition, wallCheckRadius);
-
-    }
 
     private Vector3 ApplyFriction(Vector3 velocity)
     {
-        if(isGrounded && deltaGroundFrictionTimeout > 0)
+        if(groundSensor.IsGrounded && deltaGroundFrictionTimeout > 0)
         {
             deltaGroundFrictionTimeout -= Time.deltaTime;
             return velocity;
@@ -276,10 +207,10 @@ public class MovementSystem : MonoBehaviour
 
         Vector3 frictionVector;    
     
-        if(isNextToWall && !isGrounded)
+        if(wallSensor.IsNextToWall && !groundSensor.IsGrounded)
         {
             frictionVector = new (0, wallFriction * verticalVelocity.y, 0);
-        }else if(isGrounded)
+        }else if(groundSensor.IsGrounded)
         {
             frictionVector = new (groundFriction * velocity.x, 0, groundFriction * velocity.z);
 
@@ -290,7 +221,7 @@ public class MovementSystem : MonoBehaviour
 
     private Vector3 ApplyVector(ref Vector3 appliedVector, Vector3 velocity)
     {
-        velocity += appliedVector;
+        velocity += (characterController.isGrounded)? appliedVector : appliedVector/(mass / 10);
         appliedVector = Vector3.zero;
         return velocity;
     }
@@ -317,10 +248,9 @@ public class MovementSystem : MonoBehaviour
 
     private void CalculateSpeed(Vector3 inputDirection, Vector3 targetDirection)
     {
-        if(inputDirection == Vector3.zero || (!isGrounded && !isNextToWall))
+        if(inputDirection == Vector3.zero && !groundSensor.IsGrounded && !wallSensor.IsNextToWall)
         {
-            inputVector = currentHorizontalSpeed * lastDirection;
-            
+            inputVector = new (characterController.velocity.x, 0, characterController.velocity.z);
             return;
         }
 
@@ -335,7 +265,7 @@ public class MovementSystem : MonoBehaviour
     private IEnumerator SlideC()
     {
         float deltaSlideTime = slideTime;
-        while (deltaSlideTime > 0 && isGrounded)
+        while (deltaSlideTime > 0 && groundSensor.IsGrounded)
         {
             additionalMovementVector = transform.forward.normalized * slideSpeed;
 
@@ -371,18 +301,18 @@ public class MovementSystem : MonoBehaviour
     {
         if(isSprinting == value) return;
 
-        isSprinting = value && isGrounded;
+        isSprinting = value && groundSensor.IsGrounded;
     }
 
     public void ApplyGravity(float gravityForce)
     {
-        gravityForce *= Time.timeScale * Time.deltaTime;
-        currentGravity = gravityForce ;
+        gravityForce *= Time.timeScale;
+        currentGravity = gravityForce;
 
-        verticalVelocity.y = Mathf.Lerp(verticalVelocity.y, verticalVelocity.y + gravityForce * mass, 1);
+        verticalVelocity += Time.fixedDeltaTime * gravityForce * ((wallSensor.IsNextToWall)? mass/2 :mass)  * transform.up;
 
-        if(isGrounded) verticalVelocity.y = Mathf.Clamp(verticalVelocity.y, -2, 100);
-        else if (isNextToWall) verticalVelocity.y = Mathf.Clamp(verticalVelocity.y, -5, 100);
+        if(groundSensor.IsGrounded) verticalVelocity.y = Mathf.Clamp(verticalVelocity.y, -2, 100);
+        
     }
 
 

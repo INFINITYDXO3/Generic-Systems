@@ -11,6 +11,9 @@ public class WeaponData : ScriptableObject
 
     [HideInInspector]
     public RecoilData RecoilData;
+
+    [HideInInspector]
+    public float Knockback;
     
     [HideInInspector]
     public float SpreadAngle;
