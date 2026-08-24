@@ -3,13 +3,13 @@ using UnityEngine;
 public class GravityVolume : MonoBehaviour
 {
     [SerializeField]
-    private float gravityForce = -9.8f;
+    private Vector3 gravityForce;
 
     void OnTriggerStay(Collider other)
     {
-        if(other.TryGetComponent(out MovementSystem movementSystem))
+        if(other.TryGetComponent(out IGravityAffected gravityAffected))
         {
-            movementSystem.ApplyGravity(gravityForce / DebugInfo.GetDetailedCurrentFPS());
+            gravityAffected.SetGravity(gravityForce);
         }
     }
 }

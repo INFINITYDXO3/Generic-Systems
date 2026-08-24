@@ -19,8 +19,8 @@ public class PlayerControlsManger : MonoBehaviour
 
     private void Update()
     {
-        player.ProcessMove(input.Move);
         player.ProcessLook(input.Look);
+        player.ProcessMove(input.Move);
         CheckSprint(input.Sprint);
         player.ToggleCrouch(input.Crouch);
         player.PerformJump(input.Jump);

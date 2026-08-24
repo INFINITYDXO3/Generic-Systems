@@ -102265,7 +102265,7 @@ GameObject:
   - component: {fileID: 948594432}
   - component: {fileID: 948594431}
   - component: {fileID: 948594433}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gravity Volume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -102320,7 +102320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fefd7553783396341a545deeebebff57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GravityVolume
-  gravityForce: -20
+  gravityForce: {x: -5, y: 0, z: 0}
 --- !u!1 &955427838
 GameObject:
   m_ObjectHideFlags: 0
@@ -202409,7 +202409,7 @@ Transform:
   m_GameObject: {fileID: 1542533438}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.37872, y: 8.25, z: 0.85}
+  m_LocalPosition: {x: 8.37872, y: 8.25, z: 3.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -254422,7 +254422,7 @@ Transform:
   m_GameObject: {fileID: 2102617845}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 8.37872, y: 8.25, z: 0.85}
+  m_LocalPosition: {x: 8.37872, y: 8.25, z: 3.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -254441,7 +254441,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 625c14eee3ad46c99df7c7c891ef668a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineThirdPersonFollow
-  Damping: {x: 0.1, y: 0.5, z: 0.3}
+  Damping: {x: 0.1, y: 0.2, z: 0.1}
   ShoulderOffset: {x: 0, y: 0, z: 0}
   VerticalArmLength: 0
   CameraSide: 1
@@ -254998,7 +254998,7 @@ Transform:
   m_GameObject: {fileID: 919132147481503334}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.37872, y: 7.72, z: 0.85}
+  m_LocalPosition: {x: 8.37872, y: 7.72, z: 3.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -255118,13 +255118,13 @@ MonoBehaviour:
   slideSpeed: 15
   slideTime: 1
   speedChangeRate: 10
-  jumpForce: 5
+  jumpForce: 10
   playerHeight: 2
   playerCenter: {x: 0, y: 0, z: 0}
   crouchPercentage: 0.5
   groundSensor: {fileID: 1665013462}
-  groundFriction: 0.05
-  groundFrictionTimeout: 0.05
+  groundFriction: 0.2
+  groundFrictionTimeout: 0.2
   wallSensor: {fileID: 1665013461}
   maxWallJumps: 2
   wallFriction: 0.1

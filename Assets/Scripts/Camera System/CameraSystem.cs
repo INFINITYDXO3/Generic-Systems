@@ -32,11 +32,12 @@ public class CameraSystem : MonoBehaviour
         float mouseX = lookVector.x;
         float mouseY = lookVector.y;
 
-        xRotation -= (mouseY * Time.deltaTime) * ySensitivity;
+        xRotation -= mouseY * Time.deltaTime * ySensitivity;
         xRotation = Mathf.Clamp(xRotation, BottomClamp, TopClamp);
         
         cinemachineCam.Follow.localRotation = Quaternion.Euler(xRotation + additionalXRotation, additionalYRotation, additionalZRotation);
-        transform.Rotate(Vector3.up * ((mouseX) * Time.deltaTime) * xSensitivity);
+        transform.Rotate(mouseX * Time.deltaTime * xSensitivity * Vector3.up);
+
     }
 
     public void AdditionalRotation(float x, float y, float z)

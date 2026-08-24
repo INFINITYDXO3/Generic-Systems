@@ -74,12 +74,15 @@ public class MovementSystem : MonoBehaviour
 
     #endregion
 
-    private Vector3 inputVector;
+    private Vector3 cachedInput;
+    private Vector3 horizontalVelocity;
     private Vector3 velocity;
     private Vector3 knockbackVector;
     private Vector3 verticalVelocity;
     private Vector3 lastDirection;
     private Vector3 additionalMovementVector;
+
+    private Vector3 currentHorizontalVelocity;
 
     private FrictionSurface currentFrictionSurface;
 
@@ -91,7 +94,8 @@ public class MovementSystem : MonoBehaviour
     private bool isJumping;
     private bool jumpSafeControl;
 
-    private float currentGravity;
+    private Vector3 currentGravity;
+    private Vector3 currentPlane;
     float currentHorizontalSpeed;
     private float deltaGroundFrictionTimeout;
     private float crouchHeight {get => playerHeight * crouchPercentage;}
@@ -108,21 +112,45 @@ public class MovementSystem : MonoBehaviour
     }
 
 
-    private void FixedUpdate()
+    private void Update()
     {
         if(groundSensor.IsGrounded) wallJumps = 0;
+        Move();
     }
 
-    public void Move(Vector2 moveVector)
+    public void SetInput(Vector2 moveVector)
     {
-        Vector3 inputDirection = new Vector3(moveVector.x, 0.0f, moveVector.y).normalized;
+        cachedInput = new (moveVector.x, 0, moveVector.y);
+    }
 
+    public void Move()
+    {
+        Vector3 inputDirection = Vector3.ProjectOnPlane(cachedInput, currentGravity);
         Vector3 targetDirection = CalculateDirection(inputDirection);
-        
-        currentHorizontalSpeed = (currentHorizontalSpeed - GetCurrentHorizontalSpeed() == currentHorizontalSpeed)? currentHorizontalSpeed : GetCurrentHorizontalSpeed();
-        CalculateSpeed(inputDirection, targetDirection);        
+        currentHorizontalVelocity = GetCurrentHorizontalVelocity();
 
-        velocity = inputVector + verticalVelocity;
+        if(currentHorizontalVelocity.magnitude < 0.5f) currentHorizontalVelocity = Vector3.zero;
+
+
+        float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
+
+        if(!groundSensor.IsGrounded) inputDirection *= airSpeed;
+
+        if(inputDirection != Vector3.zero) 
+        {
+            horizontalVelocity = Vector3.Lerp(horizontalVelocity, targetSpeed * inputDirection.magnitude * targetDirection, speedChangeRate * Time.deltaTime);
+
+            float threshold = 0.1f;
+
+            float directionDifference = Vector3.Dot(targetDirection, currentHorizontalVelocity.normalized);
+            Debug.Log(directionDifference);
+            if(Mathf.Abs(directionDifference) > 1 - threshold && currentHorizontalVelocity != Vector3.zero && !groundSensor.IsGrounded) horizontalVelocity = targetDirection * currentHorizontalVelocity.magnitude;
+       
+        }else horizontalVelocity = currentHorizontalVelocity;
+
+        verticalVelocity = Vector3.Project(verticalVelocity.normalized, currentGravity.normalized) * verticalVelocity.magnitude;
+        
+        velocity = horizontalVelocity + verticalVelocity;
 
         velocity = ApplyVector(ref knockbackVector, velocity);
         velocity = ApplyVector(ref additionalMovementVector, velocity);
@@ -221,7 +249,7 @@ public class MovementSystem : MonoBehaviour
 
     private Vector3 ApplyVector(ref Vector3 appliedVector, Vector3 velocity)
     {
-        velocity += (characterController.isGrounded)? appliedVector : appliedVector/(mass / 10);
+        velocity += (PhysicalyGrounded())? appliedVector : appliedVector/(mass / 10);
         appliedVector = Vector3.zero;
         return velocity;
     }
@@ -241,26 +269,22 @@ public class MovementSystem : MonoBehaviour
     }
 
 
-    private float GetCurrentHorizontalSpeed()
-    {
-        return new Vector3(characterController.velocity.x, 0.0f, characterController.velocity.z).magnitude;
-    }
+    private Vector3 GetCurrentHorizontalVelocity()
+{
+    // FIX: Just project the total CC velocity onto the plane perpendicular to gravity.
+    // Do NOT subtract currentGravity (acceleration) from velocity (speed).
+    return Vector3.ProjectOnPlane(characterController.velocity, currentGravity);
+}
 
     private void CalculateSpeed(Vector3 inputDirection, Vector3 targetDirection)
     {
-        if(inputDirection == Vector3.zero && !groundSensor.IsGrounded && !wallSensor.IsNextToWall)
-        {
-            inputVector = new (characterController.velocity.x, 0, characterController.velocity.z);
-            return;
-        }
+        
 
-        float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
+        
 
-        if(!characterController.isGrounded) inputDirection *= airSpeed;
-
-        inputVector = Vector3.Lerp(inputVector, targetSpeed * inputDirection.magnitude * targetDirection, speedChangeRate * Time.deltaTime);
     }
 
+    private bool PhysicalyGrounded() => (characterController != null) && characterController.isGrounded;
 
     private IEnumerator SlideC()
     {
@@ -287,7 +311,7 @@ public class MovementSystem : MonoBehaviour
         
         if(Physics.Raycast(worldHeadPoint, transform.up, out RaycastHit hitInfo))
         {
-            if(hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("Player")) return true;
+            if(hitInfo.collider.gameObject.layer == gameObject.layer) return true;
             else
             {
                 Debug.Log(hitInfo.collider.name);
@@ -304,14 +328,17 @@ public class MovementSystem : MonoBehaviour
         isSprinting = value && groundSensor.IsGrounded;
     }
 
-    public void ApplyGravity(float gravityForce)
+    public void ApplyGravity(Vector3 gravityForce)
     {
         gravityForce *= Time.timeScale;
-        currentGravity = gravityForce;
+        if(currentGravity != gravityForce)
+        {        
+            currentGravity = gravityForce;
+        }
 
-        verticalVelocity += Time.fixedDeltaTime * gravityForce * ((wallSensor.IsNextToWall)? mass/2 :mass)  * transform.up;
+        verticalVelocity += ((wallSensor.IsNextToWall)? mass/2 :mass) * Time.deltaTime * 0.1f * gravityForce;
 
-        if(groundSensor.IsGrounded) verticalVelocity.y = Mathf.Clamp(verticalVelocity.y, -2, 100);
+        if(groundSensor.IsGrounded) verticalVelocity = verticalVelocity.normalized * 2;
         
     }
 

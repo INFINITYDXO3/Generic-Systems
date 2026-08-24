@@ -31,7 +31,7 @@ public class GroundSensor : MonoBehaviour
     private void GroundedCheck()
     {
         groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset, transform.position.z);
-        isGrounded = Physics.BoxCast(groundedSpherePosition, (new Vector3(1, 0.1f, 1) * groundedBoxSize) / 2, Vector3.down, Quaternion.identity, groundedRayMaxDistance, groundLayers);
+        isGrounded = Physics.BoxCast(groundedSpherePosition, ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2, -transform.up, Quaternion.identity, groundedRayMaxDistance, groundLayers);
     }
 
    
@@ -42,8 +42,8 @@ public class GroundSensor : MonoBehaviour
         Gizmos.color = Color.aliceBlue;
 
 
-        Gizmos.DrawCube(groundedSpherePosition, new Vector3(1, 0.1f, 1) * groundedBoxSize);
-        Gizmos.DrawLine(groundedSpherePosition + (new Vector3(0, 0.1f, 0) * groundedBoxSize)/2, groundedSpherePosition + (new Vector3(0, 0.1f, 0)* groundedBoxSize)/2 - new Vector3(0, groundedRayMaxDistance, 0));
+        Gizmos.DrawCube(groundedSpherePosition, (transform.position.normalized - 0.9f * -transform.up) * groundedBoxSize);
+        Gizmos.DrawLine(groundedSpherePosition + ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2, ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2 - (-transform.up * groundedRayMaxDistance));
     
     }
 }

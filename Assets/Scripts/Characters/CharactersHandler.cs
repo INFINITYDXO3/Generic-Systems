@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public abstract class CharactersHandler : MonoBehaviour
+public abstract class CharactersHandler : MonoBehaviour, IGravityAffected
 {
     [Header("Character Components")]
 
@@ -43,7 +43,7 @@ public abstract class CharactersHandler : MonoBehaviour
     {
         if(movementSystem == null) return;
         
-        movementSystem.Move(motion);
+        movementSystem.SetInput(motion);
     }
 
     public virtual void PerformJump(bool value)
@@ -114,4 +114,8 @@ public abstract class CharactersHandler : MonoBehaviour
         aimController.SetAim(aim);
     }
 
+    public void SetGravity(Vector3 gravity)
+    {
+        movementSystem.ApplyGravity(gravity);
+    }
 }

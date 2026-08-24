@@ -13,7 +13,11 @@ public class AimController : MonoBehaviour
         if(hand != null)
         {
             Vector3 direction = aim.Direction;
-            hand.rotation = Quaternion.LookRotation(direction);
+            Quaternion rotation = Quaternion.LookRotation(direction);
+            rotation.eulerAngles = new(rotation.eulerAngles.x, hand.eulerAngles.y, hand.eulerAngles.z);
+            
+            hand.rotation = rotation;
+
         }
     }
 
