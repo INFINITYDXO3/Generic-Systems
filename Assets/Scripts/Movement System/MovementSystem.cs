@@ -74,7 +74,7 @@ public class MovementSystem : MonoBehaviour
 
     #endregion
 
-    private Vector3 cachedInput;
+    private Vector2 cachedInput;
     private Vector3 horizontalVelocity;
     private Vector3 velocity;
     private Vector3 knockbackVector;
@@ -95,8 +95,6 @@ public class MovementSystem : MonoBehaviour
     private bool jumpSafeControl;
 
     private Vector3 currentGravity;
-    private Vector3 currentPlane;
-    float currentHorizontalSpeed;
     private float deltaGroundFrictionTimeout;
     private float crouchHeight {get => playerHeight * crouchPercentage;}
 
@@ -116,17 +114,18 @@ public class MovementSystem : MonoBehaviour
     {
         if(groundSensor.IsGrounded) wallJumps = 0;
         Move();
+        ApplyGravity();
     }
 
     public void SetInput(Vector2 moveVector)
     {
-        cachedInput = new (moveVector.x, 0, moveVector.y);
+        cachedInput = moveVector;
     }
-
+ 
     public void Move()
     {
-        Vector3 inputDirection = Vector3.ProjectOnPlane(cachedInput, currentGravity);
-        Vector3 targetDirection = CalculateDirection(inputDirection);
+        Vector3 inputDirection = ProjectOnPlane(Vector3.one * cachedInput.magnitude);
+        Vector3 targetDirection = CalculateDirection(cachedInput);
         currentHorizontalVelocity = GetCurrentHorizontalVelocity();
 
         if(currentHorizontalVelocity.magnitude < 0.5f) currentHorizontalVelocity = Vector3.zero;
@@ -134,21 +133,25 @@ public class MovementSystem : MonoBehaviour
 
         float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
+        Debug.Log(inputDirection.normalized.magnitude);
         if(!groundSensor.IsGrounded) inputDirection *= airSpeed;
 
         if(inputDirection != Vector3.zero) 
         {
-            horizontalVelocity = Vector3.Lerp(horizontalVelocity, targetSpeed * inputDirection.magnitude * targetDirection, speedChangeRate * Time.deltaTime);
-
-            float threshold = 0.1f;
+            horizontalVelocity = Vector3.Lerp(horizontalVelocity, targetSpeed * inputDirection.normalized.magnitude * targetDirection, speedChangeRate * Time.deltaTime);
+            
 
             float directionDifference = Vector3.Dot(targetDirection, currentHorizontalVelocity.normalized);
-            Debug.Log(directionDifference);
-            if(Mathf.Abs(directionDifference) > 1 - threshold && currentHorizontalVelocity != Vector3.zero && !groundSensor.IsGrounded) horizontalVelocity = targetDirection * currentHorizontalVelocity.magnitude;
+            if(directionDifference > 0 && currentHorizontalVelocity.magnitude > 1 && !groundSensor.IsGrounded)
+            {
+                horizontalVelocity = targetDirection * currentHorizontalVelocity.magnitude;
+            }else if(directionDifference < 0 && !groundSensor.IsGrounded)
+            {
+                horizontalVelocity = targetSpeed * inputDirection.magnitude * targetDirection;
+            }
+
        
         }else horizontalVelocity = currentHorizontalVelocity;
-
-        verticalVelocity = Vector3.Project(verticalVelocity.normalized, currentGravity.normalized) * verticalVelocity.magnitude;
         
         velocity = horizontalVelocity + verticalVelocity;
 
@@ -168,33 +171,22 @@ public class MovementSystem : MonoBehaviour
 
     }
 
-    public void Jump(bool value)
+    public void Jump()
     {
-        if(!value) jumpSafeControl = false;
-
-        if(value == isJumping || jumpSafeControl) return;
-
-        if (value)
+        if (groundSensor.IsGrounded )
         {
-            if (groundSensor.IsGrounded )
-            {
-                verticalVelocity.y = jumpForce;
+            verticalVelocity = Project(Vector3.one).normalized * jumpForce;
 
-            } else if (wallSensor.IsNextToWall && wallJumps < maxWallJumps)
-            {
-                verticalVelocity.y = jumpForce;
-                
-                if(wallSensor != null) additionalMovementVector = wallSensor.WallNormal * jumpForce;
+        } else if (wallSensor.IsNextToWall && wallJumps < maxWallJumps)
+        {
+            verticalVelocity = Project(Vector3.one).normalized * jumpForce;
+            
+            if(wallSensor != null) additionalMovementVector = wallSensor.WallNormal * jumpForce;
 
-                wallJumps++;
-            }
-
-            deltaGroundFrictionTimeout = groundFrictionTimeout;
+            wallJumps++;
         }
-        
 
-        isJumping = value;
-        jumpSafeControl = true;
+        deltaGroundFrictionTimeout = groundFrictionTimeout;
 
     }
 
@@ -237,10 +229,10 @@ public class MovementSystem : MonoBehaviour
     
         if(wallSensor.IsNextToWall && !groundSensor.IsGrounded)
         {
-            frictionVector = new (0, wallFriction * verticalVelocity.y, 0);
+            frictionVector = wallFriction * Project(velocity);
         }else if(groundSensor.IsGrounded)
         {
-            frictionVector = new (groundFriction * velocity.x, 0, groundFriction * velocity.z);
+            frictionVector = currentHorizontalVelocity * groundFriction;
 
         }else frictionVector = Vector3.zero;
 
@@ -254,35 +246,41 @@ public class MovementSystem : MonoBehaviour
         return velocity;
     }
 
-    private Vector3 CalculateDirection(Vector3 inputDirection)
+    private Vector3 CalculateDirection(Vector2 inputDirection)
     {
         float _targetRotation = 0.0f;
 
-        if (inputDirection != Vector3.zero)
+        if (inputDirection != Vector2.zero)
         {
-            _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + transform.eulerAngles.y;
+            float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.y) * Mathf.Rad2Deg;
+
+            _targetRotation = targetAngle + transform.eulerAngles.y;
+
         }
 
-
-        Vector3 targetDirection = (inputDirection == Vector3.zero) ? lastDirection : Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+        Vector3 projectedEuler = Project(Vector3.one * _targetRotation);
+        Vector3 targetDirection = (inputDirection == Vector2.zero) ? lastDirection : Quaternion.Euler(projectedEuler) * Vector3.forward;
         return targetDirection.normalized;
     }
 
 
     private Vector3 GetCurrentHorizontalVelocity()
-{
-    // FIX: Just project the total CC velocity onto the plane perpendicular to gravity.
-    // Do NOT subtract currentGravity (acceleration) from velocity (speed).
-    return Vector3.ProjectOnPlane(characterController.velocity, currentGravity);
-}
-
-    private void CalculateSpeed(Vector3 inputDirection, Vector3 targetDirection)
     {
-        
-
-        
-
+        // FIX: Just project the total CC velocity onto the plane perpendicular to gravity.
+        // Do NOT subtract currentGravity (acceleration) from velocity (speed).
+        return ProjectOnPlane(characterController.velocity);
     }
+
+    private Vector3 Project(Vector3 input)
+    {
+        return Vector3.Project(input, (currentGravity != Vector3.zero)? currentGravity.normalized : -transform.up);
+    }
+
+    private Vector3 ProjectOnPlane(Vector3 input)
+    {
+        return Vector3.ProjectOnPlane(input, (currentGravity != Vector3.zero)? currentGravity.normalized : -transform.up);
+    }
+
 
     private bool PhysicalyGrounded() => (characterController != null) && characterController.isGrounded;
 
@@ -323,23 +321,26 @@ public class MovementSystem : MonoBehaviour
 
     public void ToggleSprint(bool value)
     {
-        if(isSprinting == value) return;
-
         isSprinting = value && groundSensor.IsGrounded;
     }
 
-    public void ApplyGravity(Vector3 gravityForce)
-    {
-        gravityForce *= Time.timeScale;
+    public void SetGravity(Vector3 gravityForce)
+    {    
         if(currentGravity != gravityForce)
-        {        
+        {
             currentGravity = gravityForce;
+            /*
+                Rotation Behavior here
+            */
         }
 
-        verticalVelocity += ((wallSensor.IsNextToWall)? mass/2 :mass) * Time.deltaTime * 0.1f * gravityForce;
+    }
 
-        if(groundSensor.IsGrounded) verticalVelocity = verticalVelocity.normalized * 2;
-        
+    private void ApplyGravity()
+    {
+        verticalVelocity += ((wallSensor.IsNextToWall)? mass/2 :mass) * Time.deltaTime * 0.1f * currentGravity;
+
+        if( characterController != null && characterController.isGrounded) verticalVelocity = verticalVelocity.normalized * 2;
     }
 
 

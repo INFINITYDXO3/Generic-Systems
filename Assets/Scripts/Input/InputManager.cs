@@ -19,6 +19,7 @@ public class InputManager : MonoBehaviour
 	public bool Crouch {get => crouch;}
 	public bool Attacking {get => attacking;}
 
+	public event Action OnJumpPerformed;
 	public event Action OnReloadStarted;
 	public event Action OnNextWeaponSwitched;
 
@@ -35,6 +36,7 @@ public class InputManager : MonoBehaviour
 
 	public void OnJump(InputValue value)
 	{
+		OnJumpPerformed?.Invoke();
 		jump = value.isPressed;
 	}
 

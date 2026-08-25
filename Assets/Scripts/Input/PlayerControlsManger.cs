@@ -15,15 +15,15 @@ public class PlayerControlsManger : MonoBehaviour
     {
         input.OnReloadStarted += player.Reload;
         input.OnNextWeaponSwitched += player.NextWeapon;
+        input.OnJumpPerformed += player.PerformJump;
     }
 
     private void Update()
     {
-        player.ProcessLook(input.Look);
         player.ProcessMove(input.Move);
+        player.ProcessLook(input.Look);
         CheckSprint(input.Sprint);
         player.ToggleCrouch(input.Crouch);
-        player.PerformJump(input.Jump);
         
 
         player.ToggleAttack(input.Attacking);

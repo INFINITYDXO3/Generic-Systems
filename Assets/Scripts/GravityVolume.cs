@@ -9,7 +9,7 @@ public class GravityVolume : MonoBehaviour
     {
         if(other.TryGetComponent(out IGravityAffected gravityAffected))
         {
-            gravityAffected.SetGravity(gravityForce);
+            gravityAffected.SetGravity(gravityForce * Time.timeScale);
         }
     }
 }

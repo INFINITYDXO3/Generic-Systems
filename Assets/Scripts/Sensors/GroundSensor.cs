@@ -1,5 +1,8 @@
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 public class GroundSensor : MonoBehaviour
 {
 
@@ -15,7 +18,9 @@ public class GroundSensor : MonoBehaviour
     [SerializeField]
     private LayerMask groundLayers = 1;
 
-    private Vector3 groundedSpherePosition;
+    private Vector3 groundedBoxPosition;
+    private Vector3 groundedBoxScale;
+    private Vector3 groundedRayDirection;
 
     
     private bool isGrounded;
@@ -30,20 +35,30 @@ public class GroundSensor : MonoBehaviour
 
     private void GroundedCheck()
     {
-        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset, transform.position.z);
-        isGrounded = Physics.BoxCast(groundedSpherePosition, ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2, -transform.up, Quaternion.identity, groundedRayMaxDistance, groundLayers);
+        UpdateGroundedBoxValues();
+        isGrounded = Physics.BoxCast(groundedBoxPosition, groundedBoxScale/2 , groundedRayDirection, Quaternion.identity, groundedRayMaxDistance, groundLayers);
     }
 
    
-
+    #if UNITY_EDITOR
     private void OnDrawGizmos()
     { 
-        groundedSpherePosition = new Vector3(transform.position.x, transform.position.y - groundedOffset, transform.position.z);
+        if(!EditorApplication.isPlaying) UpdateGroundedBoxValues();
         Gizmos.color = Color.aliceBlue;
 
 
-        Gizmos.DrawCube(groundedSpherePosition, (transform.position.normalized - 0.9f * -transform.up) * groundedBoxSize);
-        Gizmos.DrawLine(groundedSpherePosition + ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2, ((transform.position - 0.9f * -transform.up) * groundedBoxSize) / 2 - (-transform.up * groundedRayMaxDistance));
+        Gizmos.DrawCube(groundedBoxPosition, groundedBoxScale);
+        Gizmos.DrawRay(Vector3.ProjectOnPlane(groundedBoxPosition, -transform.up) + (Vector3.Project(groundedBoxPosition, -transform.up) - Vector3.Project(groundedBoxScale, -transform.up)/2), groundedRayDirection * groundedRayMaxDistance);
     
+    }
+    #endif
+
+    private void UpdateGroundedBoxValues()
+    {
+        // Debug.Log(transform.up);
+        Vector3 offset = Vector3.Project(transform.position.normalized, -transform.up) * -groundedOffset;
+        groundedBoxPosition = transform.position - offset;
+        groundedBoxScale = (Vector3.ProjectOnPlane(Vector3.one, -transform.up) + Vector3.Project(Vector3.one, -transform.up) * 0.1f) * groundedBoxSize;
+        groundedRayDirection = -transform.up;
     }
 }

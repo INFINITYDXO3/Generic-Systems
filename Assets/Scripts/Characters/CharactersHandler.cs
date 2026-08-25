@@ -46,11 +46,11 @@ public abstract class CharactersHandler : MonoBehaviour, IGravityAffected
         movementSystem.SetInput(motion);
     }
 
-    public virtual void PerformJump(bool value)
+    public virtual void PerformJump()
     {
         if(movementSystem == null) return;
         
-        movementSystem.Jump(value);
+        movementSystem.Jump();
     }
 
     public virtual void ToggleSprint(bool value)
@@ -116,6 +116,6 @@ public abstract class CharactersHandler : MonoBehaviour, IGravityAffected
 
     public void SetGravity(Vector3 gravity)
     {
-        movementSystem.ApplyGravity(gravity);
+        movementSystem.SetGravity(gravity);
     }
 }
