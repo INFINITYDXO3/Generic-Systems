@@ -112,7 +112,6 @@ public class MovementSystem : MonoBehaviour
         characterController.center = playerCenter;
     }
 
-
     private void Update()
     {
         if(groundSensor.IsGrounded) wallJumps = 0;
