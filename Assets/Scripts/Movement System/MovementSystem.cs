@@ -8,6 +8,9 @@ public class MovementSystem : MonoBehaviour
     [SerializeField]
     private CharacterController characterController;
 
+    [SerializeField]
+    private CapsuleCollider otherCollider;
+
     [Header("Player")]
     [SerializeField]
     private float mass = 60;
@@ -133,7 +136,6 @@ public class MovementSystem : MonoBehaviour
 
         float targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        Debug.Log(inputDirection.normalized.magnitude);
         if(!groundSensor.IsGrounded) inputDirection *= airSpeed;
 
         if(inputDirection != Vector3.zero) 
@@ -142,7 +144,7 @@ public class MovementSystem : MonoBehaviour
             
 
             float directionDifference = Vector3.Dot(targetDirection, currentHorizontalVelocity.normalized);
-            if(directionDifference > 0 && currentHorizontalVelocity.magnitude > 1 && !groundSensor.IsGrounded)
+            if(directionDifference > 0 && currentHorizontalVelocity.magnitude > horizontalVelocity.magnitude && !groundSensor.IsGrounded)
             {
                 horizontalVelocity = targetDirection * currentHorizontalVelocity.magnitude;
             }else if(directionDifference < 0 && !groundSensor.IsGrounded)
@@ -169,6 +171,8 @@ public class MovementSystem : MonoBehaviour
 
         lastDirection = (velocity != Vector3.zero)?  velocity.normalized : targetDirection;
 
+        if(GetCurrentVerticalVelocity().magnitude < 0.1f && Vector3.Dot(verticalVelocity.normalized, currentGravity.normalized) < 0) verticalVelocity = GetCurrentVerticalVelocity();
+
     }
 
     public void Jump()
@@ -194,10 +198,11 @@ public class MovementSystem : MonoBehaviour
     {
         if(isCrouching == value || isSliding) return;
         float height = characterController.height;
-
+    
         if (value)
         {
             height = crouchHeight;
+
             if(isSprinting && groundSensor.IsGrounded) ToggleSlide();
         }
         else if(TryStandUp())
@@ -206,7 +211,7 @@ public class MovementSystem : MonoBehaviour
         }else value = true;
 
         characterController.height = height;
-
+        otherCollider.height = height;
         isCrouching = value;
     }
 
@@ -241,35 +246,44 @@ public class MovementSystem : MonoBehaviour
 
     private Vector3 ApplyVector(ref Vector3 appliedVector, Vector3 velocity)
     {
-        velocity += (PhysicalyGrounded())? appliedVector : appliedVector/(mass / 10);
+        velocity += (groundSensor != null && groundSensor.IsGrounded)? appliedVector : appliedVector/(mass / 10);
         appliedVector = Vector3.zero;
         return velocity;
     }
 
     private Vector3 CalculateDirection(Vector2 inputDirection)
     {
-        float _targetRotation = 0.0f;
+        // 1. If no input, maintain last direction
+        if (inputDirection.sqrMagnitude < 0.01f) return lastDirection;
 
-        if (inputDirection != Vector2.zero)
+
+
+        // 4. Project them onto the plane perpendicular to gravity (the "floor")
+        Vector3 planarForward = ProjectOnPlane(transform.forward);
+        Vector3 planarRight = ProjectOnPlane(transform.right);
+
+        // 5. Edge-case safeguard: Looking exactly along the gravity axis (prevents zero-vectors)
+        if (planarForward.sqrMagnitude < 0.01f)
         {
-            float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.y) * Mathf.Rad2Deg;
-
-            _targetRotation = targetAngle + transform.eulerAngles.y;
-
+            planarForward = ProjectOnPlane(transform.up);
+        }
+        if (planarRight.sqrMagnitude < 0.01f)
+        {
+            planarRight = Vector3.Cross((currentGravity != Vector3.zero)? currentGravity.normalized : -transform.up, planarForward.normalized);
         }
 
-        Vector3 projectedEuler = Project(Vector3.one * _targetRotation);
-        Vector3 targetDirection = (inputDirection == Vector2.zero) ? lastDirection : Quaternion.Euler(projectedEuler) * Vector3.forward;
+        // 6. Build the movement direction using the 2D input
+        // inputDirection.x is Strafe (A/D), inputDirection.z is Forward/Back (W/S)
+        Vector3 targetDirection = (planarRight.normalized * inputDirection.x) + (planarForward.normalized * inputDirection.y);
+
+
         return targetDirection.normalized;
     }
 
 
-    private Vector3 GetCurrentHorizontalVelocity()
-    {
-        // FIX: Just project the total CC velocity onto the plane perpendicular to gravity.
-        // Do NOT subtract currentGravity (acceleration) from velocity (speed).
-        return ProjectOnPlane(characterController.velocity);
-    }
+    private Vector3 GetCurrentHorizontalVelocity() => ProjectOnPlane(characterController.velocity);
+
+    private Vector3 GetCurrentVerticalVelocity() => Project(characterController.velocity);
 
     private Vector3 Project(Vector3 input)
     {
@@ -281,8 +295,6 @@ public class MovementSystem : MonoBehaviour
         return Vector3.ProjectOnPlane(input, (currentGravity != Vector3.zero)? currentGravity.normalized : -transform.up);
     }
 
-
-    private bool PhysicalyGrounded() => (characterController != null) && characterController.isGrounded;
 
     private IEnumerator SlideC()
     {
@@ -329,9 +341,16 @@ public class MovementSystem : MonoBehaviour
         if(currentGravity != gravityForce)
         {
             currentGravity = gravityForce;
-            /*
-                Rotation Behavior here
-            */
+            groundSensor.ChangeGroundDirection(gravityForce.normalized);
+            
+            transform.rotation = Quaternion.FromToRotation(transform.up, -gravityForce.normalized) * transform.rotation;
+
+
+            if(Project(Vector3.one) != Vector3.up)
+            {
+                characterController.height = 0.5f * playerHeight;
+                characterController.center = new Vector3(0, -characterController.height / 2, 0);
+            }
         }
 
     }
@@ -340,7 +359,7 @@ public class MovementSystem : MonoBehaviour
     {
         verticalVelocity += ((wallSensor.IsNextToWall)? mass/2 :mass) * Time.deltaTime * 0.1f * currentGravity;
 
-        if( characterController != null && characterController.isGrounded) verticalVelocity = verticalVelocity.normalized * 2;
+        if( groundSensor != null && groundSensor.IsGrounded && Vector3.Dot(verticalVelocity.normalized, currentGravity.normalized) > 0.9f) verticalVelocity = verticalVelocity.normalized * 2;
     }
 
 
@@ -349,3 +368,4 @@ public class MovementSystem : MonoBehaviour
          knockbackVector = knockback;
     }
 }
+
