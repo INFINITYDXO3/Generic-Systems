@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 public class InputManager : MonoBehaviour
 {
 	private Vector2 move;
@@ -58,6 +57,7 @@ public class InputManager : MonoBehaviour
 
 	private void OnApplicationFocus(bool hasFocus)
 	{
+		Debug.Log(hasFocus);
 		Cursor.lockState = CursorLockMode.Locked;
 	}
 

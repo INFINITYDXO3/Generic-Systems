@@ -1,18 +1,29 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
-public class WeaponsHandler : MonoBehaviour
+public class WeaponsHandler : NetworkBehaviour
 {
     [SerializeField] private AimController aimController;
 
     [SerializeField] private RecoilEffect recoilEffect;
 
+    
     private List<Weapon> weapons = new ();
 
+    [SyncVar(hook = nameof(OnWeaponChanged))]
     private Weapon _currentWeapon;
     public Weapon CurrentWeapon {get => _currentWeapon;}
 
     
+
+    private void OnWeaponChanged(Weapon oldWeapon, Weapon newWeapon)
+    {
+        if(isLocalPlayer) return;
+        
+        if(oldWeapon != null) DeInitCurrentWeapon(oldWeapon);
+        if(newWeapon != null) InitCurrentWeapon(newWeapon);
+    }
 
     public void InitWeapons(List<Weapon> weapons)
     {
@@ -36,8 +47,9 @@ public class WeaponsHandler : MonoBehaviour
     {
         if(_currentWeapon != null)
         {
-            DeInitCurrentWeapon();
+            DeInitCurrentWeapon(_currentWeapon);
         }
+        
         _currentWeapon = weapon;
         _currentWeapon.gameObject.SetActive(true);
         if(aimController != null) _currentWeapon.SetAimController(aimController);
@@ -45,12 +57,11 @@ public class WeaponsHandler : MonoBehaviour
     }
 
 
-    private void DeInitCurrentWeapon()
+    private void DeInitCurrentWeapon(Weapon weapon)
     {
-        _currentWeapon.gameObject.SetActive(false);
-        if(aimController != null) _currentWeapon.SetAimController(null);
-        if(recoilEffect != null) _currentWeapon.onWeaponAttack.RemoveListener(OnCurrentWeaponAttack);
-        _currentWeapon = null;
+        weapon.gameObject.SetActive(false);
+        if(aimController != null) weapon.SetAimController(null);
+        if(recoilEffect != null) weapon.onWeaponAttack.RemoveListener(OnCurrentWeaponAttack);
     }
 
 
@@ -89,6 +100,7 @@ public class WeaponsHandler : MonoBehaviour
 
     public void SelectWeapon(int index)
     {
+        Debug.Log(transform);
         InitCurrentWeapon(weapons[index]);
     }
 }

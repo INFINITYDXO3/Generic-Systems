@@ -5,7 +5,6 @@ public class PlayerControlsManger : MonoBehaviour
     [SerializeField] private PlayerHandler player;
     [SerializeField] private InputManager input;
 
-
     void Start()
     {
         InitInputEvents();
@@ -21,7 +20,6 @@ public class PlayerControlsManger : MonoBehaviour
     private void Update()
     {
         player.ProcessMove(input.Move);
-        player.ProcessLook(input.Look);
         CheckSprint(input.Sprint);
         player.ToggleCrouch(input.Crouch);
         
@@ -29,6 +27,11 @@ public class PlayerControlsManger : MonoBehaviour
         player.ToggleAttack(input.Attacking);
     }
 
+    private void LateUpdate()
+    {
+        player.ProcessLook(input.Look);
+    }
+    
     private void CheckSprint(bool isSprinting)
     {
         player.ToggleSprint(isSprinting);

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
+using Mirror;
 
 public class Weapon : Item
 {
@@ -28,9 +29,13 @@ public class Weapon : Item
     private Coroutine attackCoroutine;
     private AimController aimController;
 
+    [SyncVar]
     private bool isFiring = false;
+
+    [SyncVar]
     private bool isReloading = false;
 
+    [SyncVar]
     private int currentBulletsCount;
 
 

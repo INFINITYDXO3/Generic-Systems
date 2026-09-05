@@ -1,12 +1,13 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Mirror;
 
-public class MovementSystem : MonoBehaviour
+public class MovementSystem : NetworkBehaviour
 {
     #region Serialized Fields
     [SerializeField]
-    private CharacterController characterController;
+    private Rigidbody characterController;
 
     [SerializeField]
     private CapsuleCollider otherCollider;
@@ -84,20 +85,26 @@ public class MovementSystem : MonoBehaviour
     private Vector3 verticalVelocity;
     private Vector3 lastDirection;
     private Vector3 additionalMovementVector;
-
     private Vector3 currentHorizontalVelocity;
 
     private FrictionSurface currentFrictionSurface;
 
+    [SyncVar(hook = nameof(OnGravityChanged))]
+    private Vector3 currentGravity;
+    
     public float Speed {get; private set;}
 
+    [SyncVar]
     private bool isSprinting;
+    
+    [SyncVar]
     private bool isSliding;
+    
+    [SyncVar]
     private bool isCrouching;
-    private bool isJumping;
-    private bool jumpSafeControl;
 
-    private Vector3 currentGravity;
+
+    
     private float deltaGroundFrictionTimeout;
     private float crouchHeight {get => playerHeight * crouchPercentage;}
 
@@ -108,11 +115,11 @@ public class MovementSystem : MonoBehaviour
 
     private void Start()
     {
-        characterController.height = playerHeight;
-        characterController.center = playerCenter;
+        otherCollider.height = playerHeight;
+        otherCollider.center = playerCenter;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if(groundSensor.IsGrounded) wallJumps = 0;
         Move();
@@ -166,7 +173,7 @@ public class MovementSystem : MonoBehaviour
         }
 
 
-        characterController.Move(Time.deltaTime * velocity);
+        characterController.linearVelocity = (velocity);
 
         lastDirection = (velocity != Vector3.zero)?  velocity.normalized : targetDirection;
 
@@ -176,6 +183,7 @@ public class MovementSystem : MonoBehaviour
 
     public void Jump()
     {
+
         if (groundSensor.IsGrounded )
         {
             verticalVelocity = Project(Vector3.one).normalized * jumpForce;
@@ -196,7 +204,7 @@ public class MovementSystem : MonoBehaviour
     public void ToggleCrouch(bool value)
     {
         if(isCrouching == value || isSliding) return;
-        float height = characterController.height;
+        float height = otherCollider.height;
     
         if (value)
         {
@@ -209,13 +217,14 @@ public class MovementSystem : MonoBehaviour
             height = playerHeight;
         }else value = true;
 
-        characterController.height = height;
+        // characterController.height = height;
         otherCollider.height = height;
         isCrouching = value;
     }
 
     private void ToggleSlide()
     {
+
         isSliding = true;
         slidingCoroutine ??= StartCoroutine(SlideC());
     }
@@ -223,6 +232,7 @@ public class MovementSystem : MonoBehaviour
 
     private Vector3 ApplyFriction(Vector3 velocity)
     {
+
         if(groundSensor.IsGrounded && deltaGroundFrictionTimeout > 0)
         {
             deltaGroundFrictionTimeout -= Time.deltaTime;
@@ -280,9 +290,9 @@ public class MovementSystem : MonoBehaviour
     }
 
 
-    private Vector3 GetCurrentHorizontalVelocity() => ProjectOnPlane(characterController.velocity);
+    private Vector3 GetCurrentHorizontalVelocity() => ProjectOnPlane(characterController.linearVelocity);
 
-    private Vector3 GetCurrentVerticalVelocity() => Project(characterController.velocity);
+    private Vector3 GetCurrentVerticalVelocity() => Project(characterController.linearVelocity);
 
     private Vector3 Project(Vector3 input)
     {
@@ -314,8 +324,8 @@ public class MovementSystem : MonoBehaviour
 
     private bool TryStandUp()
     {
-        Vector3 headPoint = new (0, characterController.center.y  + characterController.height / 2, 0);
-        Vector3 worldHeadPoint = characterController.transform.TransformPoint(headPoint);
+        Vector3 headPoint = new (0, otherCollider.center.y  + otherCollider.height / 2, 0);
+        Vector3 worldHeadPoint = otherCollider.transform.TransformPoint(headPoint);
         Debug.DrawRay(worldHeadPoint, transform.up, Color.blue, 50);
         
         if(Physics.Raycast(worldHeadPoint, transform.up, out RaycastHit hitInfo))
@@ -335,6 +345,16 @@ public class MovementSystem : MonoBehaviour
         isSprinting = value && groundSensor.IsGrounded;
     }
 
+    private void OnGravityChanged(Vector3 oldGravity, Vector3 newGravity)
+    {
+        if(currentGravity != newGravity && !isLocalPlayer)
+        {
+            currentGravity = newGravity;
+            
+            SetGravity(newGravity);
+        }
+    }
+
     public void SetGravity(Vector3 gravityForce)
     {    
         if(currentGravity != gravityForce)
@@ -345,11 +365,11 @@ public class MovementSystem : MonoBehaviour
             transform.rotation = Quaternion.FromToRotation(transform.up, -gravityForce.normalized) * transform.rotation;
 
 
-            if(Project(Vector3.one) != Vector3.up)
-            {
-                characterController.height = 0.5f * playerHeight;
-                characterController.center = new Vector3(0, -characterController.height / 2, 0);
-            }
+            // if(Project(Vector3.one) != Vector3.up)
+            // {
+            //     characterController.height = 0.5f * playerHeight;
+            //     characterController.center = new Vector3(0, -characterController.height / 2, 0);
+            // }
         }
 
     }

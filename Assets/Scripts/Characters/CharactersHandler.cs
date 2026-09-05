@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Mirror;
 
-public abstract class CharactersHandler : MonoBehaviour, IGravityAffected
+public abstract class CharactersHandler : NetworkBehaviour, IGravityAffected
 {
     [Header("Character Components")]
 

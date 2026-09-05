@@ -1,7 +1,8 @@
 using Unity.Cinemachine;
 using UnityEngine;
-
-public class CameraSystem : MonoBehaviour
+using Mirror;
+using UnityEngine.Rendering.Universal;
+public class CameraSystem : NetworkBehaviour
 {
     [SerializeField] private float xSensitivity = 30f;
     [SerializeField] private float ySensitivity = 30f;
@@ -11,6 +12,10 @@ public class CameraSystem : MonoBehaviour
     [SerializeField] private CameraEffects cameraEffects;
     [SerializeField] private CinemachineCamera cinemachineCam;
     [SerializeField] private CinemachineBrain cinemachineBrain;
+
+    [Header("Weapons Camera"), SerializeField] private Camera weaponsCam;
+
+    [Header("Clamp Settings")]
 
     [SerializeField, Tooltip("How far in degrees can you move the camera up")]
     private float TopClamp = 70.0f;
@@ -26,6 +31,16 @@ public class CameraSystem : MonoBehaviour
     public CameraEffects CameraEffects {get => cameraEffects;}
     public Camera Cam {get => cinemachineBrain.OutputCamera;}
     public CinemachineCamera CinemachineCamera {get => cinemachineCam;}
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if(!isLocalPlayer)return;
+        cinemachineCam.Priority = 1;
+        if(cinemachineBrain == null) cinemachineBrain = FindAnyObjectByType<CinemachineBrain>();
+        if(cinemachineBrain != null) Cam.GetUniversalAdditionalCameraData().cameraStack.Add(weaponsCam);
+
+    }
 
     public void RotateCamera(Vector2 lookVector)
     {

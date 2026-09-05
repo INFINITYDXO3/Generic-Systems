@@ -1,8 +1,10 @@
 using UnityEngine;
+using Mirror;
 
-public abstract class Item : MonoBehaviour, IPickable, IDroppable
+public abstract class Item : NetworkBehaviour, IPickable, IDroppable
 {
     protected bool canBePicked;
+
 
     public virtual void Drop()
     {
