@@ -15,10 +15,14 @@ public class PlayerControlsManger : MonoBehaviour
         input.OnReloadStarted += player.Reload;
         input.OnNextWeaponSwitched += player.NextWeapon;
         input.OnJumpPerformed += player.PerformJump;
+
+        input.OnTestPerformed += player.Damage;
     }
 
     private void Update()
     {
+        if(player.IsDead) return;
+
         player.ProcessMove(input.Move);
         CheckSprint(input.Sprint);
         player.ToggleCrouch(input.Crouch);
@@ -29,6 +33,7 @@ public class PlayerControlsManger : MonoBehaviour
 
     private void LateUpdate()
     {
+        if(player.IsDead) return;
         player.ProcessLook(input.Look);
     }
     

@@ -12,7 +12,7 @@ public class WallSensor : MonoBehaviour
     private LayerMask wallLayers = 1; 
 
     private readonly RaycastHit[] wallHits = new RaycastHit[8];
-    private readonly Vector3[] _castDirections = new[] { Vector3.forward, Vector3.back, Vector3.right, Vector3.left };
+    private Vector3[] _castDirections;
     
     private Vector3 wallSpherePosition;
     private Vector3 wallNormal;
@@ -25,6 +25,7 @@ public class WallSensor : MonoBehaviour
     
     void FixedUpdate()
     {
+        _castDirections = new[] { transform.forward, -transform.forward, transform.right, -transform.right };
         WallCheck();    
     }
 

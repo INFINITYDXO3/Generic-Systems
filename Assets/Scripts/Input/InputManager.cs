@@ -21,6 +21,7 @@ public class InputManager : MonoBehaviour
 	public event Action OnJumpPerformed;
 	public event Action OnReloadStarted;
 	public event Action OnNextWeaponSwitched;
+	public event Action OnTestPerformed;
 
 	public void OnMove(InputValue value)
 	{
@@ -57,7 +58,6 @@ public class InputManager : MonoBehaviour
 
 	private void OnApplicationFocus(bool hasFocus)
 	{
-		Debug.Log(hasFocus);
 		Cursor.lockState = CursorLockMode.Locked;
 	}
 
@@ -69,6 +69,11 @@ public class InputManager : MonoBehaviour
 	public void OnNextWeapon(InputValue value)
 	{
 		OnNextWeaponSwitched?.Invoke();
+	}
+
+	public void OnTest(InputValue value)
+	{
+		OnTestPerformed?.Invoke();
 	}
 
 

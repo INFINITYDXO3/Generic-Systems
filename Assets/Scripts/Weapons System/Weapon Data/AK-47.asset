@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AK-47
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   WeaponType: 1
+  WeaponIcon: {fileID: 21300000, guid: 00707d2f4a104b255a6dbedbbd77f322, type: 3}
   Damage: 5
   RecoilData:
     RecoilX: 20

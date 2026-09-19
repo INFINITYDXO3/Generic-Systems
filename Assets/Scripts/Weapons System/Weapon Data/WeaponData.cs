@@ -5,6 +5,9 @@ public class WeaponData : ScriptableObject
 {
     [HideInInspector]
     public WeaponsTypes WeaponType;
+
+    [HideInInspector]
+    public Sprite WeaponIcon;
     
     [HideInInspector]
     public float Damage;

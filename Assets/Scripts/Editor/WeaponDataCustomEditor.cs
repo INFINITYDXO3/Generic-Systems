@@ -5,6 +5,7 @@ using System;
 public class WeaponDataCustomEditor : Editor
 {
     private SerializedProperty weaponType;
+    private SerializedProperty weaponIcon;
     private SerializedProperty damage;
     private SerializedProperty recoilData;
     private SerializedProperty knockback;
@@ -21,6 +22,7 @@ public class WeaponDataCustomEditor : Editor
     {
         // Cache all properties once
         weaponType = serializedObject.FindProperty("WeaponType");
+        weaponIcon = serializedObject.FindProperty("WeaponIcon");
         damage = serializedObject.FindProperty("Damage");
         recoilData = serializedObject.FindProperty("RecoilData");       
         knockback = serializedObject.FindProperty("Knockback");       
@@ -53,6 +55,15 @@ public class WeaponDataCustomEditor : Editor
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
+
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.ObjectField(weaponIcon);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space();
+
+
 
         //General Fields
         CustomEditorUtilities.NumberField(damage, "Damage");

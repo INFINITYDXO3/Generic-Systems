@@ -7,10 +7,10 @@ public class MovementSystem : NetworkBehaviour
 {
     #region Serialized Fields
     [SerializeField]
-    private Rigidbody characterController;
+    private Rigidbody rigidBody;
 
     [SerializeField]
-    private CapsuleCollider otherCollider;
+    private CapsuleCollider playerCollider;
 
     [Header("Player")]
     [SerializeField]
@@ -92,8 +92,6 @@ public class MovementSystem : NetworkBehaviour
     [SyncVar(hook = nameof(OnGravityChanged))]
     private Vector3 currentGravity;
     
-    public float Speed {get; private set;}
-
     [SyncVar]
     private bool isSprinting;
     
@@ -103,6 +101,9 @@ public class MovementSystem : NetworkBehaviour
     [SyncVar]
     private bool isCrouching;
 
+
+    public float Speed {get => velocity.magnitude;}
+    public float HorizontalSpeed {get => currentHorizontalVelocity.magnitude;}
 
     
     private float deltaGroundFrictionTimeout;
@@ -115,8 +116,8 @@ public class MovementSystem : NetworkBehaviour
 
     private void Start()
     {
-        otherCollider.height = playerHeight;
-        otherCollider.center = playerCenter;
+        playerCollider.height = playerHeight;
+        playerCollider.center = playerCenter;
     }
 
     private void FixedUpdate()
@@ -173,7 +174,7 @@ public class MovementSystem : NetworkBehaviour
         }
 
 
-        characterController.linearVelocity = (velocity);
+        rigidBody.linearVelocity = velocity;
 
         lastDirection = (velocity != Vector3.zero)?  velocity.normalized : targetDirection;
 
@@ -204,7 +205,7 @@ public class MovementSystem : NetworkBehaviour
     public void ToggleCrouch(bool value)
     {
         if(isCrouching == value || isSliding) return;
-        float height = otherCollider.height;
+        float height = playerCollider.height;
     
         if (value)
         {
@@ -218,7 +219,7 @@ public class MovementSystem : NetworkBehaviour
         }else value = true;
 
         // characterController.height = height;
-        otherCollider.height = height;
+        playerCollider.height = height;
         isCrouching = value;
     }
 
@@ -290,9 +291,9 @@ public class MovementSystem : NetworkBehaviour
     }
 
 
-    private Vector3 GetCurrentHorizontalVelocity() => ProjectOnPlane(characterController.linearVelocity);
+    private Vector3 GetCurrentHorizontalVelocity() => ProjectOnPlane(rigidBody.linearVelocity);
 
-    private Vector3 GetCurrentVerticalVelocity() => Project(characterController.linearVelocity);
+    private Vector3 GetCurrentVerticalVelocity() => Project(rigidBody.linearVelocity);
 
     private Vector3 Project(Vector3 input)
     {
@@ -324,16 +325,17 @@ public class MovementSystem : NetworkBehaviour
 
     private bool TryStandUp()
     {
-        Vector3 headPoint = new (0, otherCollider.center.y  + otherCollider.height / 2, 0);
-        Vector3 worldHeadPoint = otherCollider.transform.TransformPoint(headPoint);
-        Debug.DrawRay(worldHeadPoint, transform.up, Color.blue, 50);
+        Vector3 headPoint = new (0, playerCollider.center.y  + playerCollider.height / 2, 0);
+        Vector3 worldHeadPoint = playerCollider.transform.TransformPoint(headPoint);
+        Ray ray = new (worldHeadPoint, transform.up);
         
-        if(Physics.Raycast(worldHeadPoint, transform.up, out RaycastHit hitInfo))
+        Debug.DrawRay(ray.origin, ray.direction, Color.blue, 50);
+        
+        if(Physics.Raycast(ray, out RaycastHit hitInfo, playerHeight/2))
         {
             if(hitInfo.collider.gameObject.layer == gameObject.layer) return true;
             else
             {
-                Debug.Log(hitInfo.collider.name);
                 return false;
             }
         }else return true;

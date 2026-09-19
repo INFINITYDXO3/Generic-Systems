@@ -35,8 +35,7 @@ public class Weapon : Item
     [SyncVar]
     private bool isReloading = false;
 
-    [SyncVar]
-    private int currentBulletsCount;
+    public int CurrentBulletsCount {get; private set;}
 
 
     protected virtual void Start()
@@ -46,7 +45,7 @@ public class Weapon : Item
 
     protected virtual void InitWeapon()
     {
-        currentBulletsCount = weaponData.MagSize;
+        CurrentBulletsCount = weaponData.MagSize;
     }
 
     protected virtual void OnEnable()
@@ -95,7 +94,7 @@ public class Weapon : Item
 
     public void OnReloadFinished()
     {
-        currentBulletsCount = weaponData.MagSize;
+        CurrentBulletsCount = weaponData.MagSize;
         isReloading = false;
     }
 
@@ -132,12 +131,12 @@ public class Weapon : Item
 
     public bool CanAttack()
     {
-        return currentBulletsCount > 0 && !isReloading;
+        return CurrentBulletsCount > 0 && !isReloading;
     }
 
     public bool CanReload()
     {
-        return !isFiring && currentBulletsCount != weaponData.MagSize && !isReloading;
+        return !isFiring && CurrentBulletsCount != weaponData.MagSize && !isReloading;
     }
     
     private void Hit()
@@ -159,7 +158,7 @@ public class Weapon : Item
          
         
         AttackEffects();
-        currentBulletsCount = Mathf.Clamp(currentBulletsCount - 1, 0, weaponData.MagSize);
+        CurrentBulletsCount = Mathf.Clamp(CurrentBulletsCount - 1, 0, weaponData.MagSize);
 
         if (RaycastManager.PerformRaycast(aim, out RaycastHit hit, weaponData.Range, targetMask, true))
         {

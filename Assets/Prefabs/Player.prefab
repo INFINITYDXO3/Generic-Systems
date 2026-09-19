@@ -11598,9 +11598,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99e0c8f8919d63446b28a4a16d60cd5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerControlsManger
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
   player: {fileID: 575185809068678788}
   input: {fileID: 2146445147377970436}
 --- !u!114 &575185809068678788
@@ -11678,6 +11675,7 @@ MonoBehaviour:
   cameraEffects: {fileID: 7752587807945646941}
   cinemachineCam: {fileID: 360016010353264763}
   cinemachineBrain: {fileID: 7533171596136665545}
+  weaponsCam: {fileID: 0}
   TopClamp: 89
   BottomClamp: -70
 --- !u!114 &1023423800841251183
@@ -11705,6 +11703,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0c48c28b1b707d43bd7d33c38168c72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponsHandler
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   aimController: {fileID: 1023423800841251183}
   recoilEffect: {fileID: 7901992950211230236}
 --- !u!114 &7942346205876696242
@@ -11737,7 +11738,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5259463176917160850}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
   m_Name: 
@@ -12163,6 +12164,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be130993b4125da4e9f7032385d3ba9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   weaponData: {fileID: 11400000, guid: 2e8eef4666b73ed48b1a4aae9c744a27, type: 2}
   targetMask:
     serializedVersion: 2
@@ -12322,6 +12326,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3731410233491335582}
+  - component: {fileID: 5822519337349184809}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -12348,6 +12353,23 @@ Transform:
   - {fileID: 5167204115166394607}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5822519337349184809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7158947709869932207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 0
+  _assetId: 2728294837
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
 --- !u!1 &7515018696965800857
 GameObject:
   m_ObjectHideFlags: 0
@@ -12620,6 +12642,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be130993b4125da4e9f7032385d3ba9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   weaponData: {fileID: 11400000, guid: 9cf43a8263deb5743bb7681f76b9744c, type: 2}
   targetMask:
     serializedVersion: 2
@@ -12889,6 +12914,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be130993b4125da4e9f7032385d3ba9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   weaponData: {fileID: 11400000, guid: 9cf43a8263deb5743bb7681f76b9744c, type: 2}
   targetMask:
     serializedVersion: 2

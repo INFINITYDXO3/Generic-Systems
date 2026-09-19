@@ -8,8 +8,10 @@ public class Enemy : CharactersHandler
         target = FindAnyObjectByType<PlayerHandler>().transform;
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
+        
         Vector3 move = target.position - transform.position;
         ProcessMove(new (move.x, move.z));
         if(target != null)
